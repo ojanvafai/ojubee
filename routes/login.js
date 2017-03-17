@@ -11,32 +11,42 @@ function cacheTokens(tokens) {
 	}, 600);
 }
 
+// TODO: Remove the copy-paste in thermostats.js.
+function getTokens(callback) {
+  memcache.get('tokens', function(err, val) {
+    if (err)
+      console.log("Couldn't get tokesn from memcache");
+    else
+      return callback(JSON.parse(val));
+  }, 600);
+}
+
 exports.list = function(req, res){
-  var tokens = req.session.tokens;
-  var cookie_refresh = req.cookies.refreshtoken;
+  getTokens((tokens) => {
+	  var cookie_refresh = req.cookies.refreshtoken;
 
-	var next = req.param('next');
-	var nextParams = next ? ('?next=' + next) : '';
+		var next = req.param('next');
+		var nextParams = next ? ('?next=' + next) : '';
 
-  if (cookie_refresh || tokens) {
-		var refresh_token = cookie_refresh || tokens.refresh_token;
+	  if (cookie_refresh || tokens) {
+			var refresh_token = cookie_refresh || tokens.refresh_token;
 
-		api.calls.refresh(refresh_token, function(err, registerResultObject) {
-			if (err) { // if we error refreshing the token clear session and re-log
-				req.session.destroy();
-				res.redirect('/login/getpin' + nextParams);
-			} else { // refresh of the tokens was successful to we can proceed to the main app
-				req.session.tokens = registerResultObject;
-				cacheTokens(registerResultObject);
-				if (next)
-					res.redirect(next);
-				else
-					res.redirect('/thermostats');
-			}
-		});
-	} else {
-		res.redirect('/login/getpin' + nextParams);
-	}
+			api.calls.refresh(refresh_token, function(err, registerResultObject) {
+				if (err) { // if we error refreshing the token clear session and re-log
+					req.session.destroy();
+					res.redirect('/login/getpin' + nextParams);
+				} else { // refresh of the tokens was successful to we can proceed to the main app
+					cacheTokens(registerResultObject);
+					if (next)
+						res.redirect(next);
+					else
+						res.redirect('/thermostats');
+				}
+			});
+		} else {
+			res.redirect('/login/getpin' + nextParams);
+		}
+	});
 };
 
 exports.create = function(req, res) {
@@ -59,7 +69,6 @@ exports.create = function(req, res) {
 			}
 			res.render('login/getpin', {pin: req.session.pin, code: req.session.authcode, interval: req.session.interval, isError: true, tooFast: tooFast,  error: errorMessage});
 		} else {
-			req.session.tokens = registerResultObject;
 			cacheTokens(registerResultObject);
 			res.redirect('/thermostats');
 		}

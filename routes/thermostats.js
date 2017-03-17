@@ -2,6 +2,7 @@ var api = require('../ecobee-api');
 var config = require('../config');
 var memcache = require('../memcache').memcache;
 
+// TODO: Remove the copy-paste in login.js.
 function getTokens(callback) {
   memcache.get('tokens', function(err, val) {
     if (err)
@@ -33,17 +34,15 @@ function getThermostatArray(response, accessToken, callback) {
 
 exports.list = function(req, res){
   getTokens((tokens) => {
-    console.log('got tokens:', tokens);
+    if (!tokens) {
+      res.redirect('/login?next=' + req.originalUrl);
+    } else {
+      getThermostatArray(res, tokens.access_token, function(thermostatArray) {
+        res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
+        res.render('thermostats/index', {thermostats : thermostatArray});
+      });
+    }
   });
-  var tokens = req.session.tokens;
-  if (!tokens) {
-    res.redirect('/login?next=' + req.originalUrl);
-  } else {
-    getThermostatArray(res, tokens.access_token, function(thermostatArray) {
-      res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
-      res.render('thermostats/index', {thermostats : thermostatArray});
-    });
-  }
 };
 
 function tempAsInt(temp) {
@@ -51,48 +50,50 @@ function tempAsInt(temp) {
 }
 
 exports.hold = function(req, res) {
-  var tokens = req.session.tokens
-    , thermostatId = req.params.id
-    , desiredCool = tempAsInt(req.param('desiredCool'))
-    , desiredHeat = tempAsInt(req.param('desiredHeat'))
-    , hvacMode = req.param('hvacmode')
-    , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
+  getTokens((tokens) => {
+    var thermostatId = req.params.id
+      , desiredCool = tempAsInt(req.param('desiredCool'))
+      , desiredHeat = tempAsInt(req.param('desiredHeat'))
+      , hvacMode = req.param('hvacmode')
+      , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
 
-  var functions_array = [];
-  var set_hold_function = new api.SetHoldFunction(desiredCool, desiredHeat,'indefinite', null);
+    var functions_array = [];
+    var set_hold_function = new api.SetHoldFunction(desiredCool, desiredHeat,'indefinite', null);
 
-  functions_array.push(set_hold_function);
+    functions_array.push(set_hold_function);
 
-  api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
-    if (error) {
-      res.redirect('/login?next=' + req.originalUrl);
-    } else {
-      // we set a timeout since it takes some time to update a thermostat. One solution would be to use ajax
-      // polling or websockets to improve this further.
-      setTimeout(function() {
-        res.redirect('/thermostats/' + thermostatId);
-      }, 6000)
-    }
+    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
+      if (error) {
+        res.redirect('/login?next=' + req.originalUrl);
+      } else {
+        // we set a timeout since it takes some time to update a thermostat. One solution would be to use ajax
+        // polling or websockets to improve this further.
+        setTimeout(function() {
+          res.redirect('/thermostats/' + thermostatId);
+        }, 6000)
+      }
+    });
   });
 }
 
 exports.resume = function(req, res) {
-  var tokens = req.session.tokens
-    , thermostatId = req.params.id
-    , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
-    , resume_program_function = new api.ResumeProgramFunction();
+  getTokens((tokens) => {
+    var thermostatId = req.params.id
+      , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
+      , resume_program_function = new api.ResumeProgramFunction();
 
-  var functions_array = [];
-  functions_array.push(resume_program_function);
+    var functions_array = [];
+    functions_array.push(resume_program_function);
 
-  api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(err) {
-    if (err) {
-      res.redirect('/login?next=' + req.originalUrl);
-    } else {
-      setTimeout(function() {
-        res.redirect('/thermostats/' + thermostatId);
-      }, 5000);
-    }
+    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(err) {
+      if (err) {
+        res.redirect('/login?next=' + req.originalUrl);
+      } else {
+        setTimeout(function() {
+          res.redirect('/thermostats/' + thermostatId);
+        }, 5000);
+      }
+    });
   });
 }
 
@@ -129,27 +130,28 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
 }
 
 exports.view = function(req, res) {
-  var tokens = req.session.tokens
-    , thermostatId = req.params.id
-    , thermostatsOptions = new api.ThermostatsOptions(thermostatId);
-  if (!tokens) {
-    res.redirect('/login?next=' + req.originalUrl);
-  } else {
-    var thermostatSummaryArray;
-    var thermostat;
+  getTokens((tokens) => {
+    var thermostatId = req.params.id
+      , thermostatsOptions = new api.ThermostatsOptions(thermostatId);
+    if (!tokens) {
+      res.redirect('/login?next=' + req.originalUrl);
+    } else {
+      var thermostatSummaryArray;
+      var thermostat;
 
-    getThermostatArray(res, tokens.access_token, function(thermostatArray) {
-      thermostatSummaryArray = thermostatArray;
-      renderViewPage(res, thermostat, thermostatSummaryArray);
-    });
-
-    api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
-      if (err) {
-        res.redirect('/');
-      } else {
-        thermostat = thermostats.thermostatList[0];
+      getThermostatArray(res, tokens.access_token, function(thermostatArray) {
+        thermostatSummaryArray = thermostatArray;
         renderViewPage(res, thermostat, thermostatSummaryArray);
-      }
-    });
-  }
+      });
+
+      api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+        if (err) {
+          res.redirect('/');
+        } else {
+          thermostat = thermostats.thermostatList[0];
+          renderViewPage(res, thermostat, thermostatSummaryArray);
+        }
+      });
+    }
+  });
 }
