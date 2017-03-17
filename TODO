@@ -6,3 +6,4 @@
 -put current temp between hot/cold
 -put resume at the bottom with what the current override is. Don't show if there's no override.
 -Have a selector for what action to take (2hr, 4hr, hold, next schedule)
+-Move token refresh to a cron instead of in the critical path for login redirects

@@ -1,9 +1,19 @@
-var api = require('../ecobee-api')
-  , config = require('../config');
+var api = require('../ecobee-api');
+var config = require('../config');
+var memcache = require('../memcache').memcache;
+
+function cacheTokens(tokens) {
+	memcache.set('tokens', JSON.stringify(tokens), function(err, val) {
+		if (err)
+			console.log("Couldn't write tokens to memcache");
+		else
+			console.log("Wrote tokens to memcache:", val);
+	}, 600);
+}
 
 exports.list = function(req, res){
-  var tokens = req.session.tokens
-    , cookie_refresh = req.cookies.refreshtoken;
+  var tokens = req.session.tokens;
+  var cookie_refresh = req.cookies.refreshtoken;
 
 	var next = req.param('next');
 	var nextParams = next ? ('?next=' + next) : '';
@@ -14,10 +24,10 @@ exports.list = function(req, res){
 		api.calls.refresh(refresh_token, function(err, registerResultObject) {
 			if (err) { // if we error refreshing the token clear session and re-log
 				req.session.destroy();
-				var queryParams =
 				res.redirect('/login/getpin' + nextParams);
 			} else { // refresh of the tokens was successful to we can proceed to the main app
 				req.session.tokens = registerResultObject;
+				cacheTokens(registerResultObject);
 				if (next)
 					res.redirect(next);
 				else
@@ -31,9 +41,9 @@ exports.list = function(req, res){
 
 exports.create = function(req, res) {
 	// get the users login credentials
-	var authcode = req.param('authcode')
-	  , appKey = config.appKey
-	  , scope = config.scope;
+	var authcode = req.param('authcode');
+	var appKey = config.appKey;
+	var scope = config.scope;
 
 	api.calls.registerPin(appKey, authcode, function(err, registerResultObject) {
 		var tooFast = false;
@@ -50,6 +60,7 @@ exports.create = function(req, res) {
 			res.render('login/getpin', {pin: req.session.pin, code: req.session.authcode, interval: req.session.interval, isError: true, tooFast: tooFast,  error: errorMessage});
 		} else {
 			req.session.tokens = registerResultObject;
+			cacheTokens(registerResultObject);
 			res.redirect('/thermostats');
 		}
 	});
@@ -58,8 +69,8 @@ exports.error = function(req, res) {
 	res.render('login/error');
 },
 exports.getpin = function(req, res) {
-	var scope = 'smartWrite'
-	  , client_id = config.appKey;
+	var scope = 'smartWrite';
+	var client_id = config.appKey;
 
 	api.calls.getPin(client_id, scope, function(err, pinResults) {
 		if (err) {

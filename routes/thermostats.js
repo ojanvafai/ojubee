@@ -1,5 +1,15 @@
-var api = require('../ecobee-api')
-  , config = require('../config');
+var api = require('../ecobee-api');
+var config = require('../config');
+var memcache = require('../memcache').memcache;
+
+function getTokens(callback) {
+  memcache.get('tokens', function(err, val) {
+    if (err)
+      console.log("Couldn't get tokesn from memcache");
+    else
+      return callback(JSON.parse(val));
+  }, 600);
+}
 
 function getThermostatArray(response, accessToken, callback) {
   var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
@@ -22,8 +32,10 @@ function getThermostatArray(response, accessToken, callback) {
 }
 
 exports.list = function(req, res){
+  getTokens((tokens) => {
+    console.log('got tokens:', tokens);
+  });
   var tokens = req.session.tokens;
-
   if (!tokens) {
     res.redirect('/login?next=' + req.originalUrl);
   } else {

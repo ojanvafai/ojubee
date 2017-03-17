@@ -6,8 +6,9 @@
     "start": "node app"
   },
   "dependencies": {
-    "express": "3.0.0",
     "ejs": "*",
-    "expect.js":"*"
+    "expect.js": "*",
+    "express": "3.0.0",
+    "memjs": "^0.10.0"
   }
 }

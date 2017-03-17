@@ -2,12 +2,12 @@
  * Module dependencies.
  */
 
-var express = require('express')
-  , routes = require('./routes')
-  , login = require('./routes/login')
-  , thermostats = require('./routes/thermostats')
-  , http = require('http')
-  , path = require('path');
+var express = require('express');
+var routes = require('./routes');
+var login = require('./routes/login');
+var thermostats = require('./routes/thermostats');
+var http = require('http');
+var path = require('path');
 
 var app = express();
 
