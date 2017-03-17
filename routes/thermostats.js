@@ -6,7 +6,7 @@ function getThermostatArray(response, accessToken, callback) {
   api.calls.thermostatSummary(accessToken, thermostatSummaryOptions, function(err, summary) {
     if(err) {
       console.log("Couldn't get thermostat summary:", err, summary);
-      response.redirect('/login');
+      response.redirect('/login?next=' + req.originalUrl);
     } else {
       console.log('thermostatSummary:', summary)
 
@@ -24,8 +24,8 @@ function getThermostatArray(response, accessToken, callback) {
 exports.list = function(req, res){
   var tokens = req.session.tokens;
 
-  if(!tokens) {
-    res.redirect('/login');
+  if (!tokens) {
+    res.redirect('/login?next=' + req.originalUrl);
   } else {
     getThermostatArray(res, tokens.access_token, function(thermostatArray) {
       res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
@@ -52,8 +52,9 @@ exports.hold = function(req, res) {
   functions_array.push(set_hold_function);
 
   api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
-    if(error) res.redirect('/login');
-    else {
+    if (error) {
+      res.redirect('/login?next=' + req.originalUrl);
+    } else {
       // we set a timeout since it takes some time to update a thermostat. One solution would be to use ajax
       // polling or websockets to improve this further.
       setTimeout(function() {
@@ -64,7 +65,6 @@ exports.hold = function(req, res) {
 }
 
 exports.resume = function(req, res) {
-
   var tokens = req.session.tokens
     , thermostatId = req.params.id
     , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
@@ -74,8 +74,9 @@ exports.resume = function(req, res) {
   functions_array.push(resume_program_function);
 
   api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(err) {
-    if(err) res.redirect('/login');
-    else {
+    if (err) {
+      res.redirect('/login?next=' + req.originalUrl);
+    } else {
       setTimeout(function() {
         res.redirect('/thermostats/' + thermostatId);
       }, 5000);
@@ -119,8 +120,8 @@ exports.view = function(req, res) {
   var tokens = req.session.tokens
     , thermostatId = req.params.id
     , thermostatsOptions = new api.ThermostatsOptions(thermostatId);
-  if(!tokens) {
-    res.redirect('/login');
+  if (!tokens) {
+    res.redirect('/login?next=' + req.originalUrl);
   } else {
     var thermostatSummaryArray;
     var thermostat;
