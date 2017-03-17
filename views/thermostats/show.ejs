@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='/css/base.css' />
+    <style>
+      button {
+        padding: 20px;
+        border: 1px;
+      }
+    </style>
+
+    <script>
+      function updateTemp(id, delta) {
+        var input = document.getElementById(id);
+        console.log('before', input.value);
+        input.value = parseInt(input.value, 10) + delta;
+        console.log('after', input.value);
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="/thermostats">Thermostats</a>
+      <% for(var i = 0; i < thermostats.length; i++) { %>
+        <a href="/thermostats/<%= thermostats[i].thermostatId %>"><%= thermostats[i].name  %></a>
+      <% } %>
+    </div>
+
+    <h1><%= thermostat.name ? thermostat.name : thermostat.identifier %></h1>
+		<div>
+      <div>Current: <%= currentTemp %>&#186; F</div>
+      <div>Mode: <%= hvacMode %></div>
+
+      <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
+        <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
+      </form>
+    </div>
+
+    <form method="POST" action="/thermostats/<%= thermostatId %>/sethold">
+      <input id="desiredHeat" name="desiredHeat" type="hidden" value="<%= desiredHeat %>" />
+      <input id="desiredCool" name="desiredCool" type="hidden" value="<%= desiredCool %>" />
+      <input name="hvacmode" type="hidden" value="<%= hvacMode %>" />
+
+      <div>
+        <div>Heat: <%= desiredHeat %>&#186; F</div>
+        <div>
+          <button type="submit" onclick="updateTemp('desiredHeat', -1)">-</button>
+          <button type="submit" onclick="updateTemp('desiredHeat', 1)">+</button>
+        </div>
+      </div>
+
+      <div>
+        <div>Cool: <%= desiredCool %>&#186; F</div>
+        <div>
+          <button type="submit" onclick="updateTemp('desiredCool', -1)">-</button>
+          <button type="submit" onclick="updateTemp('desiredCool', 1)">+</button>
+        </div>
+      </div>
+    </form>
+  </body>
+</html>

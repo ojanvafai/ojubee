@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='/css/base.css' />
+  </head>
+
+  <body>
+    <div class="nav">
+      <a href="/thermostats">Thermostats</a>
+      <% for(var i = 0; i < thermostats.length; i++) { %>
+        <a href="/thermostats/<%= thermostats[i].thermostatId %>"><%= thermostats[i].name  %></a>
+      <% } %>
+    </div>
+  </body>
+</html>
