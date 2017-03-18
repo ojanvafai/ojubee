@@ -93,7 +93,7 @@ exports.resume = function(req, res) {
 }
 
 exports.mode = function(req, res) {
-  res.redirect('/thermostats');
+  res.redirect('/');
 }
 
 function renderViewPage(response, thermostat, thermostatSummaryArray) {

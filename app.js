@@ -30,7 +30,7 @@ app.configure('development', function(){
 });
 
 // Define all of the applicaiton endpoints for get and post
-app.get('/', routes.index);
+app.get('/', thermostats.list);
 
 // check routes/login.js for the implementation details of the login routes
 app.get('/login', login.list);  // login page
@@ -43,7 +43,6 @@ app.post('/thermostats/:id/sethold', thermostats.hold);  // adjust a specific th
 app.post('/thermostats/:id/resume', thermostats.resume);  // resume a specific thermostat
 app.post('/thermostats/:id/mode', thermostats.mode); // change the mode of a specific thermostats
 app.get('/thermostats/:id', thermostats.view); // view a specific thermostat
-app.get('/thermostats', thermostats.list); // list all the users thermostats
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));

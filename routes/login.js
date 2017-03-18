@@ -45,7 +45,7 @@ exports.list = function(req, res){
 					if (next)
 						res.redirect(next);
 					else
-						res.redirect('/thermostats');
+						res.redirect('/');
 				}
 			});
 		} else {
@@ -86,7 +86,7 @@ exports.create = function(req, res) {
 			});
 		} else {
 			cacheTokens(registerResultObject);
-			res.redirect('/thermostats');
+			res.redirect('/');
 		}
 	});
 };
