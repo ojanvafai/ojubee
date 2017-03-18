@@ -9,6 +9,7 @@
         transition: opacity 0.5s;
         width: 50px;
         margin: 10px;
+        float: right;
       }
       .hidden {
         opacity: 0;
@@ -96,6 +97,7 @@
       <% } %>
     </div>
 
+    <img id="spinner" class="hidden" src="/img/spinner.gif">
     <h1><%= thermostat.name ? thermostat.name : thermostat.identifier %></h1>
 		<div>
       <div>Current: <%= currentTemp %>&#186; F</div>
@@ -120,7 +122,5 @@
       <button onclick="updateTemp('desiredCool', -1)">-</button>
       <button onclick="updateTemp('desiredCool', 1)">+</button>
     </div>
-
-    <img id="spinner" class="hidden" src="/img/spinner.gif">
   </body>
 </html>
