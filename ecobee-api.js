@@ -70,7 +70,6 @@ var api = {
     }
 
     if(options.method && options.method.toLowerCase() === 'post') {
-
       console.log('posting data:' + dataString);
       req.write(dataString);
     }

@@ -5,7 +5,6 @@
 -put resume at the bottom with what the current override is. Don't show if there's no override.
 -Have a selector for what action to take (2hr, 4hr, hold, next schedule)
 -Move token refresh to a cron instead of in the critical path for login redirects
--Use memcache for remaining uses of req.sessions
 -Sync currentTemp periodically
 -Switch resume schedule to use XHR as well
 -Show sensors in addition to the average number

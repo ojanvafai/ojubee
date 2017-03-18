@@ -84,7 +84,9 @@
 
 	    <form class="form-signin" action="/login" method="POST">
 	    	<fieldset>
-	    		<input name="authcode" type="hidden" value="<%= code %>" />
+          <input name="pin" type="hidden" value="<%= pin %>" />
+          <input name="interval" type="hidden" value="<%= interval %>" />
+	    		<input name="code" type="hidden" value="<%= code %>" />
 	    		<button class="btn" type="submit" data-loading-text="waiting <%= interval %> seconds">Complete Link</button>
 	    	</fieldset>
 	    </form>
