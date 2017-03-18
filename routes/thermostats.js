@@ -55,18 +55,14 @@ exports.hold = function(req, res) {
     var desiredCool = temperatureAsInt(req.param('desiredCool'));
     var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
     var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
-    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat,'indefinite', null)];
+    // cool_hold_temp, heat_hold_temp, hold_type, hold_hours
+    // hold_type values: dateTime, nextTransition, indefinite, holdHours.
+    // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
+    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat, 'nextTransition', null)];
 
     api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
-      if (error) {
-        res.redirect('/login?next=' + req.originalUrl);
-      } else {
-        // we set a timeout since it takes some time to update a thermostat. One solution would be to use ajax
-        // polling or websockets to improve this further.
-        setTimeout(function() {
-          res.redirect('/thermostats/' + thermostatId);
-        }, 6000)
-      }
+      var url = error ? '/login?next=' + req.originalUrl : '/thermostats/' + thermostatId;
+      res.redirect(url);
     });
   });
 }

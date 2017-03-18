@@ -462,7 +462,7 @@ ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, hold_type, hol
     holdType: hold_type
   }
 
-  if(hold_type === 'holdHours') {
+  if (hold_type === 'holdHours') {
     this.params.holdHours = hold_hours;
   }
 }
