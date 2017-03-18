@@ -4,13 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' href='/css/base.css' />
     <style>
-      button {
-        padding: 20px;
-        border: 1px;
-      }
-      input {
-        border: none;
-      }
       img {
         opacity: 1;
         transition: opacity 0.5s;
@@ -19,6 +12,38 @@
       }
       .hidden {
         opacity: 0;
+      }
+      .button-container {
+        display: flex;
+        position: relative;
+      }
+      .button-container > button {
+        flex: 1;
+        margin: 5px;
+        padding: 20px 0;
+        font-size: 40px;
+        border: 1px solid;
+        background: white;
+      }
+      .temp {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        font-size: 40px;
+        font-weight: bold;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .heat {
+        color: red
+      }
+      .cool {
+        color: blue
       }
     </style>
 
@@ -84,20 +109,16 @@
     <input id="desiredHeat" name="desiredHeat" type="hidden" value="<%= desiredHeat %>" />
     <input id="desiredCool" name="desiredCool" type="hidden"  value="<%= desiredCool %>" />
 
-    <div>
-      <div>Heat: <span id="desiredHeatSpan"><%= desiredHeat %></span>&#186; F</div>
-      <div>
-        <button onclick="updateTemp('desiredHeat', -1)">-</button>
-        <button onclick="updateTemp('desiredHeat', 1)">+</button>
-      </div>
+    <div class="button-container">
+      <div class="heat temp"><span id="desiredHeatSpan"><%= desiredHeat %></span>&#186; F</div>
+      <button onclick="updateTemp('desiredHeat', -1)">-</button>
+      <button onclick="updateTemp('desiredHeat', 1)">+</button>
     </div>
 
-    <div>
-      <div>Cool: <span id="desiredCoolSpan"><%= desiredCool %></span>&#186; F</div>
-      <div>
-        <button onclick="updateTemp('desiredCool', -1)">-</button>
-        <button onclick="updateTemp('desiredCool', 1)">+</button>
-      </div>
+    <div class="button-container">
+      <div class="cool temp"><span id="desiredCoolSpan"><%= desiredCool %></span>&#186; F</div>
+      <button onclick="updateTemp('desiredCool', -1)">-</button>
+      <button onclick="updateTemp('desiredCool', 1)">+</button>
     </div>
 
     <img id="spinner" class="hidden" src="/img/spinner.gif">

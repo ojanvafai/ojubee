@@ -35,6 +35,7 @@ exports.list = function(req, res){
 
 			api.calls.refresh(refresh_token, function(err, registerResultObject) {
 				if (err) { // if we error refreshing the token re-login
+					console.log("Error refreshing token:", err);
 					res.redirect('/login/getpin' + nextParams);
 				} else { // refresh of the tokens was successful to we can proceed to the main app
 					cacheTokens(registerResultObject);
@@ -46,6 +47,7 @@ exports.list = function(req, res){
 				}
 			});
 		} else {
+			console.log("No refresh token.");
 			res.redirect('/login/getpin' + nextParams);
 		}
 	});
