@@ -45,22 +45,17 @@ exports.list = function(req, res){
   });
 };
 
-function tempAsInt(temp) {
+function temperatureAsInt(temp) {
   return parseInt(temp, 10) * 10; // our canonical form is F * 10
 }
 
 exports.hold = function(req, res) {
   getTokens((tokens) => {
-    var thermostatId = req.params.id
-      , desiredCool = tempAsInt(req.param('desiredCool'))
-      , desiredHeat = tempAsInt(req.param('desiredHeat'))
-      , hvacMode = req.param('hvacmode')
-      , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
-
-    var functions_array = [];
-    var set_hold_function = new api.SetHoldFunction(desiredCool, desiredHeat,'indefinite', null);
-
-    functions_array.push(set_hold_function);
+    var thermostatId = req.params.id;
+    var desiredCool = temperatureAsInt(req.param('desiredCool'));
+    var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
+    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
+    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat,'indefinite', null)];
 
     api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
       if (error) {
@@ -78,9 +73,9 @@ exports.hold = function(req, res) {
 
 exports.resume = function(req, res) {
   getTokens((tokens) => {
-    var thermostatId = req.params.id
-      , thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
-      , resume_program_function = new api.ResumeProgramFunction();
+    var thermostatId = req.params.id;
+    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId);
+    var resume_program_function = new api.ResumeProgramFunction();
 
     var functions_array = [];
     functions_array.push(resume_program_function);
@@ -105,16 +100,16 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
   if (!thermostat || !thermostatSummaryArray)
     return;
 
-  var currentTemp = Math.round(thermostat.runtime.actualTemperature / 10)
-    , desiredHeat = Math.round(thermostat.runtime.desiredHeat / 10)
-    , desiredCool = Math.round(thermostat.runtime.desiredCool / 10)
-    , hvacMode = thermostat.settings.hvacMode
-    , desiredTemp = null
-    , isHold = false
-    , thermostatId = thermostat.identifier
-    , name = thermostat.name
-    , template = null
-    , isHold = thermostat.events.length > 0;
+  var currentTemp = Math.round(thermostat.runtime.actualTemperature / 10);
+  var desiredHeat = Math.round(thermostat.runtime.desiredHeat / 10);
+  var desiredCool = Math.round(thermostat.runtime.desiredCool / 10);
+  var hvacMode = thermostat.settings.hvacMode;
+  var desiredTemp = null;
+  var isHold = false;
+  var thermostatId = thermostat.identifier;
+  var name = thermostat.name;
+  var template = null;
+  var isHold = thermostat.events.length > 0;
 
   response.render('thermostats/show', {
     thermostat : thermostat,
@@ -131,8 +126,9 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
 
 exports.view = function(req, res) {
   getTokens((tokens) => {
-    var thermostatId = req.params.id
-      , thermostatsOptions = new api.ThermostatsOptions(thermostatId);
+    var thermostatId = req.params.id;
+    var thermostatsOptions = new api.ThermostatsOptions(thermostatId);
+
     if (!tokens) {
       res.redirect('/login?next=' + req.originalUrl);
     } else {

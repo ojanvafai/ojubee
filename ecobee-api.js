@@ -1,8 +1,8 @@
-var http = require('http')
-  , https = require('https')
-  , querystring = require('querystring')
-  , config = require('./config')
-  , ecobee = ecobee || {};
+var http = require('http');
+var https = require('https');
+var querystring = require('querystring');
+var config = require('./config');
+var ecobee = ecobee || {};
 
 var inMemoryCache = {};
 
@@ -571,6 +571,7 @@ ecobee.ScheduleObject = function(scheduleArray) {
     }
   };
 };
+
 exports.ScheduleObject = ecobee.ScheduleObject;
 exports.ProgramObject = ecobee.ProgramObject;
 exports.ClimateObject = ecobee.ClimateObject;
@@ -587,4 +588,3 @@ exports.ThermostatsUpdateOptions = ecobee.ThermostatsUpdateOptions;
 exports.AlertsOptions = ecobee.AlertsOptions;
 exports.RegisterOptions = ecobee.RegisterOptions;
 exports.calls = api;
-

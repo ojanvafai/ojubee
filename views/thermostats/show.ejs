@@ -8,14 +8,36 @@
         padding: 20px;
         border: 1px;
       }
+      input {
+        border: none;
+      }
     </style>
 
     <script>
+      var pendingRequest;
+
+      function handleUpdateTemperatureComplete() {
+      }
+
+      function encodedValue(id) {
+        // TODO: url encode if needed in future
+        return id + '=' + document.getElementById(id).value;
+      }
+
       function updateTemp(id, delta) {
+        if (pendingRequest)
+          pendingRequest.abort();
+
         var input = document.getElementById(id);
-        console.log('before', input.value);
         input.value = parseInt(input.value, 10) + delta;
-        console.log('after', input.value);
+
+        var data = encodedValue('desiredHeat') + '&' + encodedValue('desiredCool');
+
+        pendingRequest = new XMLHttpRequest();
+        pendingRequest.addEventListener('load', handleUpdateTemperatureComplete);
+        pendingRequest.open("POST", "/thermostats/<%= thermostatId %>/sethold");
+        pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
+        pendingRequest.send(data);
       }
     </script>
   </head>
@@ -38,26 +60,21 @@
       </form>
     </div>
 
-    <form method="POST" action="/thermostats/<%= thermostatId %>/sethold">
-      <input id="desiredHeat" name="desiredHeat" type="hidden" value="<%= desiredHeat %>" />
-      <input id="desiredCool" name="desiredCool" type="hidden" value="<%= desiredCool %>" />
-      <input name="hvacmode" type="hidden" value="<%= hvacMode %>" />
-
+    <div>
+      <div>Heat: <input id="desiredHeat" name="desiredHeat" readonly value="<%= desiredHeat %>" />&#186; F</div>
       <div>
-        <div>Heat: <%= desiredHeat %>&#186; F</div>
-        <div>
-          <button type="submit" onclick="updateTemp('desiredHeat', -1)">-</button>
-          <button type="submit" onclick="updateTemp('desiredHeat', 1)">+</button>
-        </div>
+        <button onclick="updateTemp('desiredHeat', -1)">-</button>
+        <button onclick="updateTemp('desiredHeat', 1)">+</button>
       </div>
+    </div>
 
+    <div>
+      <div>Cool: <input id="desiredCool" name="desiredCool" readonly value="<%= desiredCool %>" />&#186; F</div>
       <div>
-        <div>Cool: <%= desiredCool %>&#186; F</div>
-        <div>
-          <button type="submit" onclick="updateTemp('desiredCool', -1)">-</button>
-          <button type="submit" onclick="updateTemp('desiredCool', 1)">+</button>
-        </div>
+        <button onclick="updateTemp('desiredCool', -1)">-</button>
+        <button onclick="updateTemp('desiredCool', 1)">+</button>
       </div>
-    </form>
+    </div>
+
   </body>
 </html>
