@@ -16,10 +16,12 @@ function cacheTokens(tokens) {
 // TODO: Remove the copy-paste in thermostats.js.
 function getTokens(callback) {
   memcache.get(TOKEN_KEY, function(err, val) {
-    if (err)
+    if (err) {
       console.log("Couldn't get tokesn from memcache");
-    else
+      callback();
+    } else {
       return callback(JSON.parse(val));
+    }
   }, 600);
 }
 
