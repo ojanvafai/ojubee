@@ -11,12 +11,22 @@
       input {
         border: none;
       }
+      img {
+        opacity: 1;
+        transition: opacity 0.5s;
+        width: 50px;
+        margin: 10px;
+      }
+      .hidden {
+        opacity: 0;
+      }
     </style>
 
     <script>
       var pendingRequest;
 
       function handleUpdateTemperatureComplete() {
+        spinner.classList.add('hidden');
       }
 
       function encodedValue(id) {
@@ -28,8 +38,12 @@
         if (pendingRequest)
           pendingRequest.abort();
 
+        spinner.classList.remove('hidden');
+
         var input = document.getElementById(id);
-        input.value = parseInt(input.value, 10) + delta;
+        var newValue = parseInt(input.value, 10) + delta;
+        input.value = newValue;
+        document.getElementById(id + 'Span').textContent = newValue;
 
         var data = encodedValue('desiredHeat') + '&' + encodedValue('desiredCool');
 
@@ -60,8 +74,11 @@
       </form>
     </div>
 
+    <input id="desiredHeat" name="desiredHeat" type="hidden" value="<%= desiredHeat %>" />
+    <input id="desiredCool" name="desiredCool" type="hidden"  value="<%= desiredCool %>" />
+
     <div>
-      <div>Heat: <input id="desiredHeat" name="desiredHeat" readonly value="<%= desiredHeat %>" />&#186; F</div>
+      <div>Heat: <span id="desiredHeatSpan"><%= desiredHeat %></span>&#186; F</div>
       <div>
         <button onclick="updateTemp('desiredHeat', -1)">-</button>
         <button onclick="updateTemp('desiredHeat', 1)">+</button>
@@ -69,12 +86,13 @@
     </div>
 
     <div>
-      <div>Cool: <input id="desiredCool" name="desiredCool" readonly value="<%= desiredCool %>" />&#186; F</div>
+      <div>Cool: <span id="desiredCoolSpan"><%= desiredCool %></span>&#186; F</div>
       <div>
         <button onclick="updateTemp('desiredCool', -1)">-</button>
         <button onclick="updateTemp('desiredCool', 1)">+</button>
       </div>
     </div>
 
+    <img id="spinner" class="hidden" src="/img/spinner.gif">
   </body>
 </html>
