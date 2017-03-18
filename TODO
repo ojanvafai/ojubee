@@ -8,3 +8,5 @@
 -Use memcache for remaining uses of req.sessions
 -Sync currentTemp periodically
 -Switch resume schedule to use XHR as well
+-Show sensors in addition to the average number
+-Update README

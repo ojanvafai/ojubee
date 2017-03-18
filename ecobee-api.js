@@ -7,13 +7,13 @@ var ecobee = ecobee || {};
 var inMemoryCache = {};
 
 var api = {
-  host : config.ecobeeHost,
+  host: config.ecobeeHost,
   port: config.ecobeePort,
-  apiRoot :'/api/1/',
+  apiRoot:'/api/1/',
   /**
    * Generic request code for node handles get and post requests currently
    */
-  makeRequest : function(options, dataString, isHTTPS, callback) {
+  makeRequest: function(options, dataString, isHTTPS, callback) {
     var reqCallback = function(res) {
       var reqData = '';
       res.setEncoding('utf8');
@@ -26,32 +26,30 @@ var api = {
         callback(e);
       });
 
-        res.on('end', function() {
+      res.on('end', function() {
+        var returnData = null;
 
-          var returnData = null;
+        // are we expecting json back?
+        if(options.headers && options.headers.Accept && options.headers.Accept === 'application/json') {
 
-          // are we expecting json back?
-          if(options.headers && options.headers.Accept && options.headers.Accept === 'application/json') {
-
-            // try to parse the json, could error if we don't get json back from the server
-            try {
-              returnData = JSON.parse(reqData);
-            } catch(e) {
-              returnData = reqData;
-            }
-            console.log(returnData)
-          } else {
+          // try to parse the json, could error if we don't get json back from the server
+          try {
+            returnData = JSON.parse(reqData);
+          } catch(e) {
             returnData = reqData;
           }
-          console.log(res.statusCode)
-          if(res.statusCode !== 200) {
-            var error = new Error(res.statusCode);
-            error.data = returnData;
-            callback(error);
-          } else {
+          console.log(returnData)
+        } else {
+          returnData = reqData;
+        }
+        console.log(res.statusCode)
+        if(res.statusCode !== 200) {
+          var error = new Error(res.statusCode);
+          error.data = returnData;
+          callback(error);
+        } else {
           callback(null, returnData);
         }
-
       });
     };
 
@@ -89,22 +87,21 @@ var api = {
    * get a new pin for an application. The Client id is the api key assigned to the
    * application
    */
-  getPin : function(client_id, scope, callback) {
-    var that = this;
+  getPin: function(client_id, scope, callback) {
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home/authorize',
-      method:'GET',
-      headers : {
-        Accept:'application/json'
+      port: this.port,
+      path: '/home/authorize',
+      method: 'GET',
+      headers: {
+        Accept: 'application/json'
       }
     };
 
     var data = {
-      response_type:'ecobeePin',
+      response_type: 'ecobeePin',
       scope: scope,
-      client_id:client_id
+      client_id: client_id
     };
     var dataString = querystring.stringify(data);
     this.makeRequest(options, dataString, config.isHTTPS, callback);
@@ -113,22 +110,21 @@ var api = {
    * Attempt to register a pin once the app has been added on the
    * ecobee app portal
    */
-  registerPin : function(client_id, auth_code, callback) {
-    var that = this;
+  registerPin: function(client_id, auth_code, callback) {
     var options = {
           host: this.host,
-          port:this.port,
-          path:'/home/token',
-          method:'POST',
-          headers : {
-            Accept:'application/json',
-            'Content-Type':'application/x-www-form-urlencoded'
+          port: this.port,
+          path: '/home/token',
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         };
 
     var data = {
-      code : auth_code,
-      client_id:client_id,
+      code: auth_code,
+      client_id: client_id,
       grant_type: 'ecobeePin'
     };
 
@@ -139,28 +135,26 @@ var api = {
    * Register Call to obtain a token from user credentials
    * callback signature callback(error, data)
    */
-  register : function(registerOptions, callback) {
-    var that = this;
-
+  register: function(registerOptions, callback) {
     if(!registerOptions) {
       registerOptions = new ecobee.RegisterOptions();
     }
     var data = {
-      response_type:'ecobeeAuthz',
-      client_id:registerOptions.appKey,
+      response_type: 'ecobeeAuthz',
+      client_id: registerOptions.appKey,
       scope: registerOptions.scope,
-      username : registerOptions.username,
-      password : registerOptions.password
+      username: registerOptions.username,
+      password: registerOptions.password
     }
 
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home/authorize',
-      method:'POST',
-      headers : {
-        Accept :'application/json',
-        'Content-Type':'application/x-www-form-urlencoded'
+      port: this.port,
+      path: '/home/authorize',
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
     };
 
@@ -171,22 +165,21 @@ var api = {
   /**
    * Use a refresh token to get a new set of tokens from the server
    */
-  refresh : function(refresh_token, callback) {
-    var that = this;
+  refresh: function(refresh_token, callback) {
     var data = {
-      grant_type:'refresh_token',
+      grant_type: 'refresh_token',
       code: refresh_token,
-      client_id:config.appKey
+      client_id: config.appKey
     }
 
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home/token',
-      method:'POST',
-      headers : {
-        Accept :'application/json',
-        'Content-Type' : 'application/x-www-form-urlencoded'
+      port: this.port,
+      path: '/home/token',
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
     };
 
@@ -197,7 +190,7 @@ var api = {
    * get the summary for the thermostats associated wtih an account
    * All options are passed in the a ThermostatSummaryOptions object
    */
-  thermostatSummary : function(token, thermostatSummaryOptions, callback) {
+  thermostatSummary: function(token, thermostatSummaryOptions, callback) {
     var wrappedCallback;
     var storageKey = 'thermostatSummary';
 
@@ -221,18 +214,18 @@ var api = {
     }
 
     var data = {
-      json : JSON.stringify(thermostatSummaryOptions),
-      token : token
+      json: JSON.stringify(thermostatSummaryOptions),
+      token: token
     }
 
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home/' + this.apiRoot + 'thermostatSummary',
-      method:'GET',
-      headers : {
-        Accept :'application/json',
-        Authorization : 'Bearer ' + token
+      port: this.port,
+      path: '/home/' + this.apiRoot + 'thermostatSummary',
+      method: 'GET',
+      headers: {
+        Accept:'application/json',
+        Authorization: 'Bearer ' + token
       }
     };
 
@@ -242,18 +235,15 @@ var api = {
   /**
    * get all alerts for a given account. This has not been ported over to node yet
    */
-  alerts : function(token, alerts_options, callback) {
-    //TODO: port this from jquery to node
-    var that = this;
-
+  alerts: function(token, alerts_options, callback) {
     if(!alerts_options) {
       alerts_options = new ecobee.AlertsOptions();
     }
 
     // $.ajax({
     //   data: {
-    //     json : JSON.stringify(alerts_options),
-    //     token : token
+    //     json: JSON.stringify(alerts_options),
+    //     token: token
     //   },
 
     //   dataType: 'json',
@@ -262,8 +252,8 @@ var api = {
     //   cache: false,
     //   type: 'GET',
     //   timeout:30000,
-    //   headers : {
-    //     Authorization : 'Bearer ' + token
+    //   headers: {
+    //     Authorization: 'Bearer ' + token
     //   },
     //   url: ecobee.api.server + ecobee.api.apiRoot + 'alert',
 
@@ -291,24 +281,24 @@ var api = {
   /**
    * gets thermostats defined by the ThermostatsOptions object.
    */
-  thermostats : function(token, thermostats_options, callback) {
+  thermostats: function(token, thermostats_options, callback) {
     if(!thermostats_options) {
       thermostats_options = new ecobee.ThermostatsOptions();
     }
 
     var data = {
-      json : JSON.stringify(thermostats_options),
-      token : token
+      json: JSON.stringify(thermostats_options),
+      token: token
     }
 
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home' + this.apiRoot + 'thermostat',
-      method:'GET',
-      headers : {
-        Accept :'application/json',
-        Authorization : 'Bearer ' + token
+      port: this.port,
+      path: '/home' + this.apiRoot + 'thermostat',
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: 'Bearer ' + token
       }
     };
 
@@ -321,8 +311,7 @@ var api = {
    * so that multiple updates can be completed at one time.
    * updates are completed in order they appear in the functions array
    */
-  updateThermostats : function(token, thermostats_update_options, functions_array, thermostat_object, callback) {
-    var that = this;
+  updateThermostats: function(token, thermostats_update_options, functions_array, thermostat_object, callback) {
     if(!thermostats_update_options) {
       thermostats_update_options = new ecobee.ThermostatsUpdateOptions();
     }
@@ -337,13 +326,13 @@ var api = {
 
     var options = {
       host: this.host,
-      port:this.port,
-      path:'/home/' + this.apiRoot + 'thermostat?json=true&token=' + token,
-      method:'POST',
-      headers : {
-        Accept :'application/json',
-        Authorization : 'Bearer ' + token,
-        'Content-Type' : 'application/json'
+      port: this.port,
+      path: '/home/' + this.apiRoot + 'thermostat?json=true&token=' + token,
+      method: 'POST',
+      headers: {
+        Accept:'application/json',
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json'
       }
     };
 
@@ -368,17 +357,17 @@ ecobee.RegisterOptions = function(username, password, appKey, scope) {
  * Alert options that can control how the alerts call functions
  */
 ecobee.AlertsOptions = function() {
-  var ms_day       = 86400000,
-  number_of_days   = 31,
-  go_back_by     = number_of_days * ms_day,
-  end_date     = new Date(),
-  start_date     = new Date(end_date.getTime() - go_back_by);
+  var ms_day = 86400000,
+  number_of_days = 31,
+  go_back_by = number_of_days * ms_day,
+  end_date = new Date(),
+  start_date = new Date(end_date.getTime() - go_back_by);
 
   this.startDate = start_date.getFullYear()+'-'+(start_date.getMonth()+1)+'-'+start_date.getDate();
   this.endDate = end_date.getFullYear()+'-'+(end_date.getMonth()+1)+'-'+end_date.getDate();
   this.selection = {
-    selectionType:'managementSet',
-    selectionMatch:'/'
+    selectionType: 'managementSet',
+    selectionMatch: '/'
   };
 
   function validate(date) {
@@ -389,14 +378,14 @@ ecobee.AlertsOptions = function() {
  */
 ecobee.ThermostatsOptions = function(thermostat_ids) {
   this.selection = {
-    selectionType : 'thermostats',
-    selectionMatch : thermostat_ids,
-    includeEvents : true,
-    includeProgram : true,
-    includeSettings : true,
-    includeRuntime : true,
-    includeAlerts : true,
-    includeWeather : true
+    selectionType: 'thermostats',
+    selectionMatch: thermostat_ids,
+    includeEvents: true,
+    includeProgram: true,
+    includeSettings: true,
+    includeRuntime: true,
+    includeAlerts: true,
+    includeWeather: true
   }
 };
 /**
@@ -406,8 +395,8 @@ ecobee.ThermostatsOptions = function(thermostat_ids) {
  */
 ecobee.ThermostatsUpdateOptions = function(thermostat_ids) {
   this.selection = {
-    selectionType : 'thermostats',
-    selectionMatch : thermostat_ids
+    selectionType: 'thermostats',
+    selectionMatch: thermostat_ids
   };
   this.functions = [];
 };
@@ -417,7 +406,7 @@ ecobee.ThermostatsUpdateOptions = function(thermostat_ids) {
 ecobee.ThermostatSummaryOptions = function() {
   this.selection = {
     selectionType: 'registered',
-    selectionMatch : null
+    selectionMatch: null
   }
 };
 /**
@@ -430,7 +419,7 @@ ecobee.ResumeProgramFunction = function() {
  * Function passed to the thermostatsUpdate call to send a message to the thermostat
  */
 ecobee.SendMessageFunction = function(text) {
-  this.type  = 'sendMessage';
+  this.type = 'sendMessage';
   this.params = {
     text: text
   };
@@ -442,10 +431,10 @@ ecobee.AcknowledgeFunction = function(thermostat_id, acknowledge_ref, acknowledg
   this.type = 'acknowledge';
 
   this.params = {
-    thermostatIdentifier : thermostat_id,
-    ackRef : acknowledge_ref,
-    ackType : acknowledge_type,
-    remindMeLater : remind_later
+    thermostatIdentifier: thermostat_id,
+    ackRef: acknowledge_ref,
+    ackType: acknowledge_type,
+    remindMeLater: remind_later
   }
 
   //Values for ack_type: accept, decline, defer, unacknowledged.
@@ -457,8 +446,8 @@ ecobee.AcknowledgeFunction = function(thermostat_id, acknowledge_ref, acknowledg
 ecobee.SetOccupiedFunction = function(is_occupied, hold_type) {
   this.type = 'setOccupied';
   this.params = {
-    occupied : is_occupied,
-    holdType : hold_type
+    occupied: is_occupied,
+    holdType: hold_type
   }
 };
 /**
@@ -469,9 +458,9 @@ ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, hold_type, hol
   this.type = 'setHold';
 
   this.params = {
-    coolHoldTemp : cool_hold_temp,
-    heatHoldTemp : heat_hold_temp,
-    holdType : hold_type
+    coolHoldTemp: cool_hold_temp,
+    heatHoldTemp: heat_hold_temp,
+    holdType: hold_type
   }
 
   if(hold_type === 'holdHours') {
@@ -485,7 +474,7 @@ ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, hold_type, hol
 ecobee.ManagementSet = function(node) {
   this.selection = {
     selectionType: 'managementSet',
-    selectionMatch : node || '/'
+    selectionMatch: node || '/'
   }
 }
 /**
@@ -493,17 +482,17 @@ ecobee.ManagementSet = function(node) {
  */
 ecobee.ClimateObject = function(climate_data) {
   return {
-    name : climate_data.name,
-    climateRef : climate_data.climateRef,
-    isOccupied : climate_data.isOccupied,
-    coolFan : climate_data.coolFan,
-    heatFan : climate_data.heatFan,
-    vent : climate_data.vent,
-    ventilatorMinOnTime : climate_data.ventilatorMinOnTime,
-    owner : climate_data.owner,
-    type : climate_data.type,
-    coolTemp : climate_data.coolTemp,
-    heatTemp : climate_data.heatTemp
+    name: climate_data.name,
+    climateRef: climate_data.climateRef,
+    isOccupied: climate_data.isOccupied,
+    coolFan: climate_data.coolFan,
+    heatFan: climate_data.heatFan,
+    vent: climate_data.vent,
+    ventilatorMinOnTime: climate_data.ventilatorMinOnTime,
+    owner: climate_data.owner,
+    type: climate_data.type,
+    coolTemp: climate_data.coolTemp,
+    heatTemp: climate_data.heatTemp
   }
 }
 /**
@@ -511,15 +500,15 @@ ecobee.ClimateObject = function(climate_data) {
  */
 ecobee.ProgramObject = function(schedule_object, climates_array) {
   return {
-    schedule : schedule_object,
-    climates : climates_array,
-    getProgram : function() {
+    schedule: schedule_object,
+    climates: climates_array,
+    getProgram: function() {
       return {
-        schedule : this.schedule.schedule,
-        climates : this.climates
+        schedule: this.schedule.schedule,
+        climates: this.climates
       };
     },
-    validate : function() {
+    validate: function() {
       var climateHash = {},
         climateIndex,
         dayIndex,
@@ -550,7 +539,7 @@ ecobee.ProgramObject = function(schedule_object, climates_array) {
  */
 ecobee.ScheduleObject = function(scheduleArray) {
 
-  return {schedule : scheduleArray || [
+  return {schedule: scheduleArray || [
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
@@ -559,14 +548,14 @@ ecobee.ScheduleObject = function(scheduleArray) {
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
             ],
-    getSchedule : function() {
+    getSchedule: function() {
       return this.schedule;
     },
-    updateScheduleNode : function(dayIndex, timeIndex, climateRef) {
+    updateScheduleNode: function(dayIndex, timeIndex, climateRef) {
 
       this.schedule[dayIndex][timeIndex] = climateRef;
     },
-    getScheduleNode : function(dayIndex, timeIndex) {
+    getScheduleNode: function(dayIndex, timeIndex) {
       return this.shedule[dayIndex][timeIndex];
     }
   };

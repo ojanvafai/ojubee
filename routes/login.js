@@ -89,7 +89,7 @@ exports.getpin = function(req, res) {
 			req.session.authcode = pinResults.code;
 			req.session.pin = pinResults.ecobeePin;
 			req.session.interval = pinResults.interval;
-			res.render('login/getpin', {pin: pinResults.ecobeePin, code: pinResults.code, interval:pinResults.interval, isError: false, tooFast : false});
+			res.render('login/getpin', {pin: pinResults.ecobeePin, code: pinResults.code, interval:pinResults.interval, isError: false, tooFast: false});
 		}
 	});
 }

@@ -24,7 +24,7 @@ function getThermostatArray(response, accessToken, callback) {
       var thermostatArray = [];
       for( var i = 0; i < summary.revisionList.length; i ++) {
         var revisionArray = summary.revisionList[i].split(':');
-        thermostatArray.push({ name : revisionArray[1], thermostatId : revisionArray[0]} );
+        thermostatArray.push({ name: revisionArray[1], thermostatId: revisionArray[0]} );
       }
 
       callback(thermostatArray);
@@ -39,7 +39,7 @@ exports.list = function(req, res){
     } else {
       getThermostatArray(res, tokens.access_token, function(thermostatArray) {
         res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
-        res.render('thermostats/index', {thermostats : thermostatArray});
+        res.render('thermostats/index', {thermostats: thermostatArray});
       });
     }
   });
@@ -112,15 +112,15 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
   var isHold = thermostat.events.length > 0;
 
   response.render('thermostats/show', {
-    thermostat : thermostat,
-    thermostats : thermostatSummaryArray,
-    currentTemp : currentTemp,
-    desiredCool : desiredCool,
-    desiredHeat : desiredHeat,
-    hvacMode : hvacMode,
-    isHold : isHold,
-    thermostatId : thermostatId,
-    name : name
+    thermostat: thermostat,
+    thermostats: thermostatSummaryArray,
+    currentTemp: currentTemp,
+    desiredCool: desiredCool,
+    desiredHeat: desiredHeat,
+    hvacMode: hvacMode,
+    isHold: isHold,
+    thermostatId: thermostatId,
+    name: name
   });
 }
 
