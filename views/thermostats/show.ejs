@@ -17,7 +17,6 @@
       .split-container {
         display: flex;
         position: relative;
-        max-width: 500px;
       }
       .split-container > .item {
         flex: 1;
@@ -48,7 +47,6 @@
         pointer-events: none;
       }
       .temp {
-        max-width: 500px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -115,9 +113,23 @@
         applyState();
       }
 
+<<<<<<< HEAD
+      function sortByName(a, b) {
+        if (a.name > b.name)
+          return 1;
+        if (a.name < b.name)
+          return -1;
+        return 0;
+      }
+
+      function applySensors(sensors) {
+        var html = '';
+        sensors.sort(sortByName).forEach(function(sensor) {
+=======
       function applySensors(sensors) {
         var html = '';
         sensors.forEach(function(sensor) {
+>>>>>>> e2f9a580efceb8ba7af6944a93ff911592bf67be
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
         });
         document.getElementById('sensors').innerHTML = html;
@@ -138,6 +150,7 @@
   </head>
 
   <body>
+
     <div class="nav">
       <a href="/">Ojubee</a>
       <% for(var i = 0; i < thermostats.length; i++) { %>
@@ -171,7 +184,6 @@
     </div>
 
     <img id="spinner" class="hidden" src="/img/spinner.gif">
-
 
   </body>
 </html>
