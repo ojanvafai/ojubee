@@ -108,12 +108,14 @@
     <div class="nav">
       <a href="/">Ojubee</a>
       <% for(var i = 0; i < thermostats.length; i++) { %>
-        <a href="/thermostats/<%= thermostats[i].thermostatId %>"><%= thermostats[i].name  %></a>
+        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostat.identifier == thermostats[i].thermostatId) ? 'class=current' : ''%>>
+          <%= thermostats[i].name  %>
+        </a>
       <% } %>
     </div>
 
     <img id="spinner" class="hidden" src="/img/spinner.gif">
-    <h1><%= thermostat.name ? thermostat.name : thermostat.identifier %></h1>
+
 		<div>
       <div>Current: <span id="currentTemp"></span>&#186; F</div>
       <div>Mode: <span id="mode"></span></div>

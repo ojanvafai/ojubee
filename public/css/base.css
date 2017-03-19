@@ -20,3 +20,8 @@ body {
   color: #999;
   text-decoration: none;
 }
+
+.nav > .current {
+  background-color: #999;
+  color: black;
+}

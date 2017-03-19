@@ -7,7 +7,7 @@
 
   <body>
     <div class="nav">
-      <a href="/">Ojubee</a>
+      <a href="/" class="current">Ojubee</a>
       <% for(var i = 0; i < thermostats.length; i++) { %>
         <a href="/thermostats/<%= thermostats[i].thermostatId %>"><%= thermostats[i].name  %></a>
       <% } %>
