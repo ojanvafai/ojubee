@@ -27,25 +27,27 @@
         background: white;
         font-size: 60px;
       }
-      .temp {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .fill {
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
         left: 0;
-        font-size: 60px;
-        font-weight: bold;
         opacity: 0.5;
         pointer-events: none;
       }
+      .temp {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        font-weight: bold;
+      }
       .heat {
-        color: red
+        color: red;
       }
       .cool {
-        color: blue
+        color: blue;
       }
     </style>
 
@@ -114,27 +116,26 @@
       <% } %>
     </div>
 
-    <img id="spinner" class="hidden" src="/img/spinner.gif">
-
-		<div>
-      <div>Current: <span id="currentTemp"></span>&#186; F</div>
-      <div>Mode: <span id="mode"></span></div>
-
-      <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
-        <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
-      </form>
+    <div class="button-container">
+      <div class="cool temp fill"><span id="desiredCool"></span>&#186; F</div>
+      <button onclick="updateTemp('desiredCool', -1)">-</button>
+      <button onclick="updateTemp('desiredCool', 1)">+</button>
     </div>
 
+    <div class="temp"><span id="currentTemp"></span>&#186; F</div>
+
     <div class="button-container">
-      <div class="heat temp"><span id="desiredHeat"></span>&#186; F</div>
+      <div class="heat temp fill"><span id="desiredHeat"></span>&#186; F</div>
       <button onclick="updateTemp('desiredHeat', -1)">-</button>
       <button onclick="updateTemp('desiredHeat', 1)">+</button>
     </div>
 
-    <div class="button-container">
-      <div class="cool temp"><span id="desiredCool"></span>&#186; F</div>
-      <button onclick="updateTemp('desiredCool', -1)">-</button>
-      <button onclick="updateTemp('desiredCool', 1)">+</button>
-    </div>
+    <img id="spinner" class="hidden" src="/img/spinner.gif">
+
+    <div>Mode: <span id="mode"></span></div>
+    <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
+      <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
+    </form>
+
   </body>
 </html>
