@@ -10,7 +10,7 @@ exports.list = function(req, res){
     var nextParams = next ? ('?next=' + next) : '';
 
     if (cookie_refresh || tokens) {
-      var refresh_token = cookie_refresh || tokenStorerefresh_token;
+      var refresh_token = cookie_refresh || tokenStore.refresh_token;
 
       console.log(tokens);
 
@@ -19,6 +19,7 @@ exports.list = function(req, res){
           console.log("Error refreshing token:", err);
           res.redirect('/login/getpin' + nextParams);
         } else { // refresh of the tokens was successful to we can proceed to the main app
+          console.log('New tokens:', registerResultObject);
           tokenStore.save(registerResultObject);
 
           if (next)
@@ -64,6 +65,7 @@ exports.create = function(req, res) {
         error: errorMessage
       });
     } else {
+      console.log('New tokens:', registerResultObject);
       tokenStore.save(registerResultObject);
       res.redirect('/');
     }

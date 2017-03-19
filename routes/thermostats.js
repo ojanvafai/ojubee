@@ -86,9 +86,20 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
   if (!thermostat || !thermostatSummaryArray)
     return;
 
-  var currentTemp = Math.round(thermostat.runtime.actualTemperature / 10);
-  var desiredHeat = Math.round(thermostat.runtime.desiredHeat / 10);
-  var desiredCool = Math.round(thermostat.runtime.desiredCool / 10);
+  var sensors = [];
+  thermostat.remoteSensors.forEach((sensor) => {
+    sensor.capability.forEach((capability) => {
+      if (capability.type == 'temperature')
+        sensors.push({
+          name: sensor.name,
+          temp: parseInt(capability.value, 10) / 10,
+        });
+    })
+  });
+
+  var currentTemp = thermostat.runtime.actualTemperature / 10;
+  var desiredHeat = thermostat.runtime.desiredHeat / 10;
+  var desiredCool = thermostat.runtime.desiredCool / 10;
   var hvacMode = thermostat.settings.hvacMode;
   var desiredTemp = null;
   var isHold = false;
@@ -100,6 +111,7 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
   response.render('thermostats/show', {
     thermostat: thermostat,
     thermostats: thermostatSummaryArray,
+    sensors: sensors,
     currentTemp: currentTemp,
     desiredCool: desiredCool,
     desiredHeat: desiredHeat,

@@ -384,6 +384,7 @@ ecobee.ThermostatsOptions = function(thermostat_ids) {
     includeSettings: true,
     includeRuntime: true,
     includeAlerts: true,
+    includeSensors: true,
     includeWeather: true
   }
 };
