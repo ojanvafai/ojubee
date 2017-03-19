@@ -4,6 +4,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' href='/css/base.css' />
     <style>
+      html {
+        height: 100%;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      #details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      #details > .split-container {
+        font-size: 20px;
+      }
       img {
         opacity: 1;
         transition: opacity 0.5s;
@@ -27,9 +44,6 @@
         padding: 20px 0;
         font-size: 60px;
         background: white;
-      }
-      .split-container > #sensors {
-        font-size: 15px;
       }
       #currentTemp {
         font-size: 40px;
@@ -113,7 +127,6 @@
         applyState();
       }
 
-<<<<<<< HEAD
       function sortByName(a, b) {
         if (a.name > b.name)
           return 1;
@@ -125,11 +138,6 @@
       function applySensors(sensors) {
         var html = '';
         sensors.sort(sortByName).forEach(function(sensor) {
-=======
-      function applySensors(sensors) {
-        var html = '';
-        sensors.forEach(function(sensor) {
->>>>>>> e2f9a580efceb8ba7af6944a93ff911592bf67be
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
         });
         document.getElementById('sensors').innerHTML = html;
@@ -151,13 +159,19 @@
 
   <body>
 
-    <div class="nav">
-      <a href="/">Ojubee</a>
-      <% for(var i = 0; i < thermostats.length; i++) { %>
-        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostat.identifier == thermostats[i].thermostatId) ? 'class=current' : ''%>>
-          <%= thermostats[i].name  %>
-        </a>
-      <% } %>
+    <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+
+    <div id="details">
+      <div class="temp item" id="currentTemp"></div>
+      <div class="split-container">
+        <div class="item" id="sensors"></div>
+        <div class="item" id="override">
+          <div>Mode: <span id="mode"></span></div>
+          <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
+            <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div class="split-container">
@@ -167,23 +181,19 @@
     </div>
 
     <div class="split-container">
-      <div class="item" id="sensors"></div>
-      <div class="temp item" id="currentTemp"></div>
-      <div class="item" id="override">
-        <div>Mode: <span id="mode"></span></div>
-        <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
-          <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="split-container">
       <div class="heat temp fill" id="desiredHeat"></div>
       <button class="item" onclick="updateTemp('desiredHeat', -1)">-</button>
       <button class="item" onclick="updateTemp('desiredHeat', 1)">+</button>
     </div>
 
-    <img id="spinner" class="hidden" src="/img/spinner.gif">
+    <div class="nav">
+      <a href="/">Ojubee</a>
+      <% for(var i = 0; i < thermostats.length; i++) { %>
+        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostat.identifier == thermostats[i].thermostatId) ? 'class=current' : ''%>>
+          <%= thermostats[i].name  %>
+        </a>
+      <% } %>
+    </div>
 
   </body>
 </html>
