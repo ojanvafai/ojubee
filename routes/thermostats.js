@@ -109,16 +109,60 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
   var isHold = thermostat.events.length > 0;
 
   response.render('thermostats/show', {
-    thermostat: thermostat,
     thermostats: thermostatSummaryArray,
-    sensors: sensors,
-    currentTemp: currentTemp,
-    desiredCool: desiredCool,
-    desiredHeat: desiredHeat,
-    hvacMode: hvacMode,
     isHold: isHold,
     thermostatId: thermostatId,
-    name: name
+  });
+}
+
+function sortByName(a, b) {
+  if (a.name > b.name)
+    return 1;
+  if (a.name < b.name)
+    return -1;
+  return 0;
+}
+
+exports.json = (req, res) => {
+  tokenStore.get((tokens) => {
+    if (!tokens) {
+      res.json(null);
+      return;
+    }
+
+    var thermostatId = req.params.id;
+    var thermostatsOptions = new api.ThermostatsOptions(thermostatId);
+
+    api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+      if (err) {
+        res.json(null);
+        return;
+      }
+
+      var thermostat = thermostats.thermostatList[0];
+
+      var sensors = [];
+      thermostat.remoteSensors.forEach((sensor) => {
+        sensor.capability.forEach((capability) => {
+          if (capability.type == 'temperature')
+            sensors.push({
+              name: sensor.name,
+              temp: parseInt(capability.value, 10) / 10,
+            });
+        })
+      });
+
+      res.json({
+        currentTemp: thermostat.runtime.actualTemperature / 10,
+        desiredCool: thermostat.runtime.desiredCool / 10,
+        desiredHeat: thermostat.runtime.desiredHeat / 10,
+        isHold: thermostat.events.length > 0,
+        mode: thermostat.settings.hvacMode,
+        name: thermostat.name,
+        sensors: sensors.sort(sortByName),
+        thermostatId: thermostat.identifier,
+      });
+    });
   });
 }
 

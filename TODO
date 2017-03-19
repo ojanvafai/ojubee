@@ -4,8 +4,11 @@ v1
 -After updating temp, get new values and retry if the update hit the off-by-n error
 -Switch resume schedule to use XHR as well
 -Move token refresh to a cron instead of in the critical path for login redirects
+-Make changing thermostats do in-page refresh
 
 v2
+-Don't hide the nav-bar on transitions, but still don't show the main thermostat content
+ until the json has loaded.
 -Make URLs put human readable thermostat name without the /thermostats/
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
 -If the last update time is not recent, put it on the page somewhere.

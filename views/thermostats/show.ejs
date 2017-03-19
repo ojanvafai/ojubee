@@ -76,31 +76,37 @@
     </style>
 
     <script>
-      var g_state = {
-        currentTemp: <%= currentTemp %>,
-        mode: '<%= hvacMode %>',
-        desiredHeat: <%= desiredHeat %>,
-        desiredCool: <%= desiredCool %>,
-        // TODO: There has to be a better to get JSON into this page.
-        sensors: [
-        <% for(var i = 0; i < sensors.length; i++) { %>
-          {name: "<%= sensors[i].name %>", temp: <%= sensors[i].temp %>},
-        <% } %>
-        ],
-      }
-
-
+      var g_state = {};
       var pendingRequest;
 
-      function handleUpdateTemperatureComplete() {
-        // TODO: Verify the data returned matches the local state of the page.
-        spinner.classList.add('hidden');
+      function update() {
+        var xhr = new XMLHttpRequest();
+        xhr.responseType = 'json';
+        xhr.addEventListener('load', () =>{
+          document.body.classList.remove('hidden');
+          var newState = xhr.response;
+
+          // Check if desiredCool/heat don't match early return and
+          // issue another updateTemp request and loop through till it takes.
+          g_state = newState;
+
+          var html = '';
+          newState.sensors.forEach(function(sensor) {
+            html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
+          });
+          document.getElementById('sensors').innerHTML = html;
+
+          ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
+            document.getElementById(id).textContent = newState[id];
+          });
+        });
+        xhr.addEventListener('error', () =>{
+        });
+        xhr.open("GET", "/thermostats/<%= thermostatId %>/json");
+        xhr.send();
       }
 
-      function handleUpdateTemperatureError() {
-        handleUpdateTemperatureComplete();
-        alert('Update failed. Reload the page to be safe.');
-      }
+      update();
 
       function encodedValue(id) {
         // TODO: spaces as '+'
@@ -118,46 +124,27 @@
         var data = encodedValue('desiredHeat') + '&' + encodedValue('desiredCool');
 
         pendingRequest = new XMLHttpRequest();
-        pendingRequest.addEventListener('load', handleUpdateTemperatureComplete);
-        pendingRequest.addEventListener('error', handleUpdateTemperatureError);
+
+        pendingRequest.addEventListener('load', () => {
+          // TODO: Verify the data returned matches the local state of the page.
+          spinner.classList.add('hidden');
+        });
+
+        pendingRequest.addEventListener('error', () => {
+          handleUpdateTemperatureComplete();
+          alert('Update failed. Reload the page to be safe.');
+        });
+
         pendingRequest.open("POST", "/thermostats/<%= thermostatId %>/sethold");
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
         pendingRequest.send(data);
 
         applyState();
       }
-
-      function sortByName(a, b) {
-        if (a.name > b.name)
-          return 1;
-        if (a.name < b.name)
-          return -1;
-        return 0;
-      }
-
-      function applySensors(sensors) {
-        var html = '';
-        sensors.sort(sortByName).forEach(function(sensor) {
-          html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
-        });
-        document.getElementById('sensors').innerHTML = html;
-      }
-
-      function applyState() {
-        Object.entries(g_state).forEach(function(entry) {
-          var id = entry[0];
-          if (id == 'sensors')
-            applySensors(entry[1]);
-          else
-            document.getElementById(id).textContent = entry[1];
-        });
-      }
-
-      window.addEventListener('DOMContentLoaded', applyState);
     </script>
   </head>
 
-  <body>
+  <body class="hidden">
 
     <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
 
@@ -189,7 +176,7 @@
     <div class="nav">
       <a href="/">Ojubee</a>
       <% for(var i = 0; i < thermostats.length; i++) { %>
-        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostat.identifier == thermostats[i].thermostatId) ? 'class=current' : ''%>>
+        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostatId == thermostats[i].thermostatId) ? 'class=current' : ''%>>
           <%= thermostats[i].name  %>
         </a>
       <% } %>

@@ -16,7 +16,7 @@ app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'ejs');
-  app.use(express.favicon(path.join(__dirname, 'public','img','favicon.ico'))); 
+  app.use(express.favicon(path.join(__dirname, 'public','img','favicon.ico')));
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
@@ -43,6 +43,7 @@ app.post('/login', login.create);  // login post handler
 app.post('/thermostats/:id/sethold', thermostats.hold);  // adjust a specific thermostat hold
 app.post('/thermostats/:id/resume', thermostats.resume);  // resume a specific thermostat
 app.post('/thermostats/:id/mode', thermostats.mode); // change the mode of a specific thermostats
+app.get('/thermostats/:id/json', thermostats.json); // view a specific thermostat
 app.get('/thermostats/:id', thermostats.view); // view a specific thermostat
 
 http.createServer(app).listen(app.get('port'), function(){
