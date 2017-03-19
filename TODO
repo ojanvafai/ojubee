@@ -9,3 +9,4 @@
 -Make URLs put human readable thermostat name without the /thermostats/
 -Add fan on/off
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
+-If the last update time is not recent, put it on the page somewhere.

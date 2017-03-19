@@ -1,23 +1,13 @@
 var api = require('../ecobee-api');
 var config = require('../config');
-var memcache = require('../memcache').memcache;
+var tokenStore = require('../tokens');
 
-// TODO: Remove the copy-paste in login.js.
-function getTokens(callback) {
-  memcache.get('tokens', function(err, val) {
-    if (err)
-      console.log("Couldn't get tokesn from memcache");
-    else
-      return callback(JSON.parse(val));
-  }, 600);
-}
-
-function getThermostatArray(response, accessToken, callback) {
+function getThermostatArray(req, res, accessToken, callback) {
   var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
   api.calls.thermostatSummary(accessToken, thermostatSummaryOptions, function(err, summary) {
-    if(err) {
+    if (err) {
       console.log("Couldn't get thermostat summary:", err, summary);
-      response.redirect('/login?next=' + req.originalUrl);
+      res.redirect('/login?next=' + req.originalUrl);
     } else {
       console.log('thermostatSummary:', summary)
 
@@ -33,11 +23,11 @@ function getThermostatArray(response, accessToken, callback) {
 }
 
 exports.list = function(req, res){
-  getTokens((tokens) => {
+  tokenStore.get((tokens) => {
     if (!tokens) {
       res.redirect('/login?next=' + req.originalUrl);
     } else {
-      getThermostatArray(res, tokens.access_token, function(thermostatArray) {
+      getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
         res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
         res.render('thermostats/index', {thermostats: thermostatArray});
       });
@@ -50,7 +40,7 @@ function temperatureAsInt(temp) {
 }
 
 exports.hold = function(req, res) {
-  getTokens((tokens) => {
+  tokenStore.get((tokens) => {
     var thermostatId = req.params.id;
     var desiredCool = temperatureAsInt(req.param('desiredCool'));
     var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
@@ -68,7 +58,7 @@ exports.hold = function(req, res) {
 }
 
 exports.resume = function(req, res) {
-  getTokens((tokens) => {
+  tokenStore.get((tokens) => {
     var thermostatId = req.params.id;
     var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId);
     var resume_program_function = new api.ResumeProgramFunction();
@@ -121,7 +111,7 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
 }
 
 exports.view = function(req, res) {
-  getTokens((tokens) => {
+  tokenStore.get((tokens) => {
     var thermostatId = req.params.id;
     var thermostatsOptions = new api.ThermostatsOptions(thermostatId);
 
@@ -131,7 +121,7 @@ exports.view = function(req, res) {
       var thermostatSummaryArray;
       var thermostat;
 
-      getThermostatArray(res, tokens.access_token, function(thermostatArray) {
+      getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
         thermostatSummaryArray = thermostatArray;
         renderViewPage(res, thermostat, thermostatSummaryArray);
       });

@@ -49,6 +49,13 @@
     </style>
 
     <script>
+      var g_state = {
+        currentTemp: <%= currentTemp %>,
+        mode: '<%= hvacMode %>',
+        desiredHeat: <%= desiredHeat %>,
+        desiredCool: <%= desiredCool %>,
+      }
+
       var pendingRequest;
 
       function handleUpdateTemperatureComplete() {
@@ -62,8 +69,8 @@
       }
 
       function encodedValue(id) {
-        // TODO: url encode if needed in future
-        return id + '=' + document.getElementById(id).value;
+        // TODO: spaces as '+'
+        return id + '=' + encodeURIComponent(g_state[id]);
       }
 
       function updateTemp(id, delta) {
@@ -72,10 +79,7 @@
 
         spinner.classList.remove('hidden');
 
-        var input = document.getElementById(id);
-        var newValue = parseInt(input.value, 10) + delta;
-        input.value = newValue;
-        document.getElementById(id + 'Span').textContent = newValue;
+        g_state[id] = g_state[id] + delta;
 
         var data = encodedValue('desiredHeat') + '&' + encodedValue('desiredCool');
 
@@ -85,7 +89,17 @@
         pendingRequest.open("POST", "/thermostats/<%= thermostatId %>/sethold");
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
         pendingRequest.send(data);
+
+        applyState();
       }
+
+      function applyState() {
+        Object.entries(g_state).forEach(function(entry) {
+          document.getElementById(entry[0]).textContent = entry[1];
+        });
+      }
+
+      window.addEventListener('DOMContentLoaded', applyState);
     </script>
   </head>
 
@@ -100,25 +114,22 @@
     <img id="spinner" class="hidden" src="/img/spinner.gif">
     <h1><%= thermostat.name ? thermostat.name : thermostat.identifier %></h1>
 		<div>
-      <div>Current: <%= currentTemp %>&#186; F</div>
-      <div>Mode: <%= hvacMode %></div>
+      <div>Current: <span id="currentTemp"></span>&#186; F</div>
+      <div>Mode: <span id="mode"></span></div>
 
       <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
         <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
       </form>
     </div>
 
-    <input id="desiredHeat" name="desiredHeat" type="hidden" value="<%= desiredHeat %>" />
-    <input id="desiredCool" name="desiredCool" type="hidden"  value="<%= desiredCool %>" />
-
     <div class="button-container">
-      <div class="heat temp"><span id="desiredHeatSpan"><%= desiredHeat %></span>&#186; F</div>
+      <div class="heat temp"><span id="desiredHeat"></span>&#186; F</div>
       <button onclick="updateTemp('desiredHeat', -1)">-</button>
       <button onclick="updateTemp('desiredHeat', 1)">+</button>
     </div>
 
     <div class="button-container">
-      <div class="cool temp"><span id="desiredCoolSpan"><%= desiredCool %></span>&#186; F</div>
+      <div class="cool temp"><span id="desiredCool"></span>&#186; F</div>
       <button onclick="updateTemp('desiredCool', -1)">-</button>
       <button onclick="updateTemp('desiredCool', 1)">+</button>
     </div>
