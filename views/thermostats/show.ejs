@@ -113,6 +113,7 @@
         applyState();
       }
 
+<<<<<<< HEAD
       function sortByName(a, b) {
         if (a.name > b.name)
           return 1;
@@ -124,6 +125,11 @@
       function applySensors(sensors) {
         var html = '';
         sensors.sort(sortByName).forEach(function(sensor) {
+=======
+      function applySensors(sensors) {
+        var html = '';
+        sensors.forEach(function(sensor) {
+>>>>>>> e2f9a580efceb8ba7af6944a93ff911592bf67be
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
         });
         document.getElementById('sensors').innerHTML = html;
