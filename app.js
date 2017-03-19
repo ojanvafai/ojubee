@@ -8,6 +8,7 @@ var login = require('./routes/login');
 var thermostats = require('./routes/thermostats');
 var http = require('http');
 var path = require('path');
+var favicon = require('serve-favicon');
 
 var app = express();
 
@@ -15,7 +16,7 @@ app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'ejs');
-  app.use(express.favicon());
+  app.use(express.favicon(path.join(__dirname, 'public','img','favicon.ico'))); 
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
