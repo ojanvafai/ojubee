@@ -3,6 +3,7 @@
 -Have a selector for what action to take (2hr, 4hr, hold, next schedule)
 -Move token refresh to a cron instead of in the critical path for login redirects
 -Sync currentTemp on visibilitychange-->visible, on focus, on updating temp
+-After updating temp, get new values and retry if the update hit the off-by-n error
 -Switch resume schedule to use XHR as well
 -Show sensors in addition to the average number
 -Update README
