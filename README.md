@@ -1,7 +1,8 @@
-ecobee API Demo
+ojubee
 ====================
 
-The ecobee API demo is a sample app that uses ecobee's api and serves as an example of how to perform authentication and simple requests.
+This is a heavily modified version of the Ecobee API demo to give an easier
+to user UI than the default ecobee one.
 
 Installation
 ==================
