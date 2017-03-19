@@ -10,7 +10,7 @@
     "expect.js": "*",
     "express": "3.0.0",
     "@google-cloud/datastore": "*",
-    "memjs": "^0.10.0”,
-    “serve-favicon”: “*”
+    "memjs": "^0.10.0",
+    "serve-favicon": "*"
   }
 }
