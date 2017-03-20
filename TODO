@@ -1,6 +1,5 @@
 v1
 -Add fan on/off
--Sync currentTemp on visibilitychange-->visible, on focus
 -Switch resume schedule to use XHR as well
 -Move token refresh to a cron instead of in the critical path for login redirects
 

@@ -123,6 +123,7 @@
       }
 
       updateState();
+      window.addEventListener('focus', updateState);
 
       function encodedValue(id) {
         // TODO: spaces as '+'
