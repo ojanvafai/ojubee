@@ -79,6 +79,18 @@
       var g_state = {};
       var pendingRequest;
 
+      function applyState(state) {
+        var html = '';
+        state.sensors.forEach(function(sensor) {
+          html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
+        });
+        document.getElementById('sensors').innerHTML = html;
+
+        ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
+          document.getElementById(id).textContent = state[id];
+        });
+      }
+
       function update() {
         var xhr = new XMLHttpRequest();
         xhr.responseType = 'json';
@@ -89,16 +101,7 @@
           // Check if desiredCool/heat don't match early return and
           // issue another updateTemp request and loop through till it takes.
           g_state = newState;
-
-          var html = '';
-          newState.sensors.forEach(function(sensor) {
-            html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
-          });
-          document.getElementById('sensors').innerHTML = html;
-
-          ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
-            document.getElementById(id).textContent = newState[id];
-          });
+          applyState(g_state);
         });
         xhr.addEventListener('error', () =>{
         });
@@ -139,7 +142,8 @@
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
         pendingRequest.send(data);
 
-        applyState();
+        applyState(g_state);
+        update();
       }
     </script>
   </head>
