@@ -31,7 +31,7 @@
         flex: 1;
         margin: 5px;
       }
-      .split-container > button {
+      .split-container button {
         border: 1px solid;
         padding: 20px 0;
         font-size: 60px;
@@ -193,11 +193,15 @@
         <div class="item" id="sensors"></div>
         <div class="item" id="override">
           <div>Mode: <span id="mode"></span></div>
-          <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
-            <button style="font-size: 40px" type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
-          </form>
         </div>
       </div>
+    </div>
+
+    <div class="split-container">
+      <form class="item" method="POST" action="/thermostats/<%= thermostatId %>/resume">
+        <button style="width: 100%" type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">Resume</button>
+      </form>
+      <button class="item" onclick="alert('TBD')">Fan</button>
     </div>
 
     <div class="split-container">
