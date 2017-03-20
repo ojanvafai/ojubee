@@ -76,8 +76,9 @@
     </style>
 
     <script>
-      var g_state = {};
+      var g_state;
       var pendingRequest;
+      var pendingUpdateState;
 
       function applyState(state) {
         var html = '';
@@ -91,59 +92,100 @@
         });
       }
 
-      function update() {
-        var xhr = new XMLHttpRequest();
-        xhr.responseType = 'json';
-        xhr.addEventListener('load', () =>{
+      function updateState() {
+        if (pendingUpdateState)
+          pendingUpdateState.abort();
+
+        pendingUpdateState = new XMLHttpRequest();
+        pendingUpdateState.responseType = 'json';
+
+        pendingUpdateState.addEventListener('load', () =>{
           document.body.classList.remove('hidden');
-          var newState = xhr.response;
+
+          var newState = pendingUpdateState.response;
 
           // Check if desiredCool/heat don't match early return and
           // issue another updateTemp request and loop through till it takes.
+          if (g_state &&
+              (newState.desiredHeat != g_state.desiredHeat ||
+               newState.desiredCool != g_state.desiredCool)) {
+            console.log("Numbers didn't take. Retrying.");
+            setTimeout(updateTemp, 1000);
+            return;
+          }
+
+          spinner.classList.add('hidden');
+
+          // If we are on initial load, round values to weed out buggy
+          // fractional junk.
+          if (!g_state)
+            roundTempValues(newState);
+
           g_state = newState;
           applyState(g_state);
         });
-        xhr.addEventListener('error', () =>{
-        });
-        xhr.open("GET", "/thermostats/<%= thermostatId %>/json");
-        xhr.send();
+
+        pendingUpdateState.addEventListener('error', () =>{});
+        pendingUpdateState.open("GET", "/thermostats/<%= thermostatId %>/json");
+        pendingUpdateState.send();
       }
 
-      update();
+      updateState();
 
       function encodedValue(id) {
         // TODO: spaces as '+'
         return id + '=' + encodeURIComponent(g_state[id]);
       }
 
-      function updateTemp(id, delta) {
+      function modifyTemp(id, delta) {
+        g_state[id] = g_state[id] + delta;
+
+        // Must have a minimum of 5 degrees difference.
+        // Otherwise the server tries to do this logic but
+        // goes crazy and uses fractional values.
+        if (g_state.desiredCool - g_state.desiredHeat < 5) {
+          if (id == 'desiredHeat')
+            g_state.desiredCool = g_state.desiredHeat + 5;
+          else
+            g_state.desiredHeat = g_state.desiredCool - 5;
+        }
+
+        applyState(g_state);
+        updateTemp();
+      }
+
+      // This rounding shouldn't be necessary, but ecobee sometimes returns
+      // fractional values and everything gets confused.
+      // Seems to happen if you try to set temp values that aren't allowed,
+      // e.g. at the bounds of allowed, or hot/cold too close to each other.
+      function roundTempValues(state) {
+        state.desiredHeat = Math.round(state.desiredHeat);
+        state.desiredCool = Math.round(state.desiredCool);
+      }
+
+      function updateTemp() {
         if (pendingRequest)
           pendingRequest.abort();
 
         spinner.classList.remove('hidden');
 
-        g_state[id] = g_state[id] + delta;
-
-        var data = encodedValue('desiredHeat') + '&' + encodedValue('desiredCool');
-
         pendingRequest = new XMLHttpRequest();
 
         pendingRequest.addEventListener('load', () => {
-          // TODO: Verify the data returned matches the local state of the page.
-          spinner.classList.add('hidden');
+          updateState();
         });
 
         pendingRequest.addEventListener('error', () => {
           handleUpdateTemperatureComplete();
+          updateState();
           alert('Update failed. Reload the page to be safe.');
         });
 
         pendingRequest.open("POST", "/thermostats/<%= thermostatId %>/sethold");
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
-        pendingRequest.send(data);
 
-        applyState(g_state);
-        update();
+        roundTempValues(g_state);
+        pendingRequest.send(encodedValue('desiredHeat') + '&' + encodedValue('desiredCool'));
       }
     </script>
   </head>
@@ -167,14 +209,14 @@
 
     <div class="split-container">
       <div class="cool temp fill" id="desiredCool"></div>
-      <button class="item" onclick="updateTemp('desiredCool', -1)">-</button>
-      <button class="item" onclick="updateTemp('desiredCool', 1)">+</button>
+      <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
+      <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
     </div>
 
     <div class="split-container">
       <div class="heat temp fill" id="desiredHeat"></div>
-      <button class="item" onclick="updateTemp('desiredHeat', -1)">-</button>
-      <button class="item" onclick="updateTemp('desiredHeat', 1)">+</button>
+      <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
+      <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
     </div>
 
     <div class="nav">
