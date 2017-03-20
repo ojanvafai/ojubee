@@ -4,14 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' href='/css/base.css' />
     <style>
-      html {
-        height: 100%;
-      }
-      body {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-      }
       #details {
         flex: 1;
         display: flex;
@@ -201,7 +193,7 @@
         <div class="item" id="override">
           <div>Mode: <span id="mode"></span></div>
           <form method="POST" action="/thermostats/<%= thermostatId %>/resume">
-            <button type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
+            <button style="font: 20px" type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">resume</button>
           </form>
         </div>
       </div>

@@ -1,12 +1,12 @@
 v1
 -Add fan on/off
--Sync currentTemp on visibilitychange-->visible, on focus, on updating temp
--After updating temp, get new values and retry if the update hit the off-by-n error
+-Sync currentTemp on visibilitychange-->visible, on focus
 -Switch resume schedule to use XHR as well
 -Move token refresh to a cron instead of in the critical path for login redirects
--Make changing thermostats do in-page refresh
 
 v2
+-Do a proper appshell w serviceworker and offline
+-Make changing thermostats do in-page refresh
 -Don't hide the nav-bar on transitions, but still don't show the main thermostat content
  until the json has loaded.
 -Make URLs put human readable thermostat name without the /thermostats/
