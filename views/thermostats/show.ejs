@@ -30,6 +30,7 @@
       .split-container > .item {
         flex: 1;
         margin: 5px;
+        min-width: 0;
       }
       .split-container button {
         border: 1px solid;
@@ -248,7 +249,7 @@
     </div>
 
     <div class="split-container">
-      <button class="item" onclick="resumeSchedule()">Resume</button>
+      <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
       <button id="fan" class="item" onclick="toggleFan()">Fan</button>
     </div>
 
