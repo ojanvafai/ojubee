@@ -71,6 +71,8 @@
       var g_state;
       var pendingRequest;
       var pendingUpdateState;
+      var g_tempsModified = false;
+      var thermostatId = location.pathname.replace("/thermostats/", "");
 
       function applyState(state) {
         var html = '';
@@ -81,6 +83,19 @@
 
         ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
           document.getElementById(id).textContent = state[id];
+        });
+      }
+
+      function generateNavBar(state) {
+        var navBar = document.getElementById('nav');
+
+        state.thermostatSummary.forEach((thermostat) => {
+          var a = document.createElement('a');
+          a.href = `/thermostats/${thermostat.id}`;
+          a.textContent = thermostat.name;
+          if (thermostat.id == state.thermostatId)
+            a.className = 'current';
+          navBar.appendChild(a);
         });
       }
 
@@ -98,32 +113,51 @@
 
           // Check if desiredCool/heat don't match early return and
           // issue another updateTemp request and loop through till it takes.
-          if (g_state &&
+          if (g_tempsModified && g_state &&
               (newState.desiredHeat != g_state.desiredHeat ||
                newState.desiredCool != g_state.desiredCool)) {
-            console.log("Numbers didn't take. Retrying.");
+            console.log("Numbers didn't take. Retrying.",
+              newState.desiredHeat, g_state.desiredHeat,
+              newState.desiredCool, g_state.desiredCool);
             setTimeout(updateTemp, 1000);
             return;
           }
 
+          g_tempsModified = false;
           spinner.classList.add('hidden');
 
-          // If we are on initial load, round values to weed out buggy
-          // fractional junk.
-          if (!g_state)
+          // Initial load
+          if (!g_state) {
+            // If we are on initial load, round values to weed out buggy
+            // fractional junk.
             roundTempValues(newState);
+            generateNavBar(newState);
+          }
 
           g_state = newState;
           applyState(g_state);
         });
 
         pendingUpdateState.addEventListener('error', () =>{});
-        pendingUpdateState.open("GET", "/thermostats/<%= thermostatId %>/json");
+        pendingUpdateState.open("GET", `/thermostats/${thermostatId}/json`);
         pendingUpdateState.send();
       }
 
       updateState();
       window.addEventListener('focus', updateState);
+
+      function resumeSchedule() {
+        showSpinner();
+
+        var xhr = new XMLHttpRequest();
+        xhr.addEventListener('load', updateState);
+        xhr.addEventListener('error', () => {
+          updateState();
+          alert('Resume schedule failed. Reload the page to be safe.');
+        });
+        xhr.open("POST", `/thermostats/${thermostatId}/resume`);
+        xhr.send();
+      }
 
       function encodedValue(id) {
         // TODO: spaces as '+'
@@ -131,6 +165,7 @@
       }
 
       function modifyTemp(id, delta) {
+        g_tempsModified = true;
         g_state[id] = g_state[id] + delta;
 
         // Must have a minimum of 5 degrees difference.
@@ -156,25 +191,24 @@
         state.desiredCool = Math.round(state.desiredCool);
       }
 
+      function showSpinner() {
+        spinner.classList.remove('hidden');
+      }
+
       function updateTemp() {
         if (pendingRequest)
           pendingRequest.abort();
 
-        spinner.classList.remove('hidden');
+        showSpinner();
 
         pendingRequest = new XMLHttpRequest();
-
-        pendingRequest.addEventListener('load', () => {
-          updateState();
-        });
-
+        pendingRequest.addEventListener('load', updateState);
         pendingRequest.addEventListener('error', () => {
-          handleUpdateTemperatureComplete();
           updateState();
           alert('Update failed. Reload the page to be safe.');
         });
 
-        pendingRequest.open("POST", "/thermostats/<%= thermostatId %>/sethold");
+        pendingRequest.open("POST", `/thermostats/${thermostatId}/sethold`);
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
 
         roundTempValues(g_state);
@@ -198,9 +232,7 @@
     </div>
 
     <div class="split-container">
-      <form class="item" method="POST" action="/thermostats/<%= thermostatId %>/resume">
-        <button style="width: 100%" type="submit" <%= !isHold ? 'disabled' : ''%> data-loading-text="Loading...">Resume</button>
-      </form>
+      <button class="item" onclick="resumeSchedule()">Resume</button>
       <button class="item" onclick="alert('TBD')">Fan</button>
     </div>
 
@@ -216,13 +248,8 @@
       <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
     </div>
 
-    <div class="nav">
+    <div id="nav">
       <a href="/">Ojubee</a>
-      <% for(var i = 0; i < thermostats.length; i++) { %>
-        <a href="/thermostats/<%= thermostats[i].thermostatId %>" <%= (thermostatId == thermostats[i].thermostatId) ? 'class=current' : ''%>>
-          <%= thermostats[i].name  %>
-        </a>
-      <% } %>
     </div>
 
   </body>

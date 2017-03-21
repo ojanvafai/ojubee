@@ -1,9 +1,10 @@
 v1
 -Add fan on/off
--Switch resume schedule to use XHR as well
 -Move token refresh to a cron instead of in the critical path for login redirects
+-Cache list of thermostats in the datastore/memcache
 
 v2
+-Load all the state via JSON
 -Do a proper appshell w serviceworker and offline
 -Make changing thermostats do in-page refresh
 -Don't hide the nav-bar on transitions, but still don't show the main thermostat content

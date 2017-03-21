@@ -10,14 +10,14 @@ body {
   max-width: 500px;
 }
 
-.nav {
+#nav {
   background-color: black;
   color: #999;
   display: flex;
   flex-wrap: wrap;
 }
 
-.nav > a {
+#nav > a {
   flex: 1;
   padding: 10px;
   margin: 5px;
@@ -29,7 +29,7 @@ body {
   text-decoration: none;
 }
 
-.nav > .current {
+#nav > .current {
   background-color: #999;
   color: black;
 }

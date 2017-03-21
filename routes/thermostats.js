@@ -14,7 +14,7 @@ function getThermostatArray(req, res, accessToken, callback) {
       var thermostatArray = [];
       for( var i = 0; i < summary.revisionList.length; i ++) {
         var revisionArray = summary.revisionList[i].split(':');
-        thermostatArray.push({ name: revisionArray[1], thermostatId: revisionArray[0]} );
+        thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
       }
 
       callback(thermostatArray);
@@ -82,9 +82,19 @@ exports.mode = function(req, res) {
   res.redirect('/');
 }
 
-function renderViewPage(response, thermostat, thermostatSummaryArray) {
-  if (!thermostat || !thermostatSummaryArray)
+function sortByName(a, b) {
+  if (a.name > b.name)
+    return 1;
+  if (a.name < b.name)
+    return -1;
+  return 0;
+}
+
+function serveViewJson(req, res, thermostatList, thermostatSummary) {
+  if (!thermostatList || !thermostatSummary)
     return;
+
+  var thermostat = thermostatList[0];
 
   var sensors = [];
   thermostat.remoteSensors.forEach((sensor) => {
@@ -97,30 +107,17 @@ function renderViewPage(response, thermostat, thermostatSummaryArray) {
     })
   });
 
-  var currentTemp = thermostat.runtime.actualTemperature / 10;
-  var desiredHeat = thermostat.runtime.desiredHeat / 10;
-  var desiredCool = thermostat.runtime.desiredCool / 10;
-  var hvacMode = thermostat.settings.hvacMode;
-  var desiredTemp = null;
-  var isHold = false;
-  var thermostatId = thermostat.identifier;
-  var name = thermostat.name;
-  var template = null;
-  var isHold = thermostat.events.length > 0;
-
-  response.render('thermostats/show', {
-    thermostats: thermostatSummaryArray,
-    isHold: isHold,
-    thermostatId: thermostatId,
+  res.json({
+    currentTemp: thermostat.runtime.actualTemperature / 10,
+    desiredCool: thermostat.runtime.desiredCool / 10,
+    desiredHeat: thermostat.runtime.desiredHeat / 10,
+    isHold: thermostat.events.length > 0,
+    mode: thermostat.settings.hvacMode,
+    name: thermostat.name,
+    sensors: sensors.sort(sortByName),
+    thermostatId: thermostat.identifier,
+    thermostatSummary: thermostatSummary,
   });
-}
-
-function sortByName(a, b) {
-  if (a.name > b.name)
-    return 1;
-  if (a.name < b.name)
-    return -1;
-  return 0;
 }
 
 exports.json = (req, res) => {
@@ -133,63 +130,31 @@ exports.json = (req, res) => {
     var thermostatId = req.params.id;
     var thermostatsOptions = new api.ThermostatsOptions(thermostatId);
 
+    var thermostatList;
+    var thermostatSummary;
+
+    getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
+      thermostatSummary = thermostatArray;
+      serveViewJson(req, res, thermostatList, thermostatSummary);
+    });
+
     api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
       if (err) {
         res.json(null);
         return;
       }
 
-      var thermostat = thermostats.thermostatList[0];
-
-      var sensors = [];
-      thermostat.remoteSensors.forEach((sensor) => {
-        sensor.capability.forEach((capability) => {
-          if (capability.type == 'temperature')
-            sensors.push({
-              name: sensor.name,
-              temp: parseInt(capability.value, 10) / 10,
-            });
-        })
-      });
-
-      res.json({
-        currentTemp: thermostat.runtime.actualTemperature / 10,
-        desiredCool: thermostat.runtime.desiredCool / 10,
-        desiredHeat: thermostat.runtime.desiredHeat / 10,
-        isHold: thermostat.events.length > 0,
-        mode: thermostat.settings.hvacMode,
-        name: thermostat.name,
-        sensors: sensors.sort(sortByName),
-        thermostatId: thermostat.identifier,
-      });
+      thermostatList = thermostats.thermostatList;
+      serveViewJson(req, res, thermostatList, thermostatSummary);
     });
   });
 }
 
 exports.view = function(req, res) {
   tokenStore.get((tokens) => {
-    var thermostatId = req.params.id;
-    var thermostatsOptions = new api.ThermostatsOptions(thermostatId);
-
-    if (!tokens) {
+    if (tokens)
+      res.render('thermostats/show');
+    else
       res.redirect('/login?next=' + req.originalUrl);
-    } else {
-      var thermostatSummaryArray;
-      var thermostat;
-
-      getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
-        thermostatSummaryArray = thermostatArray;
-        renderViewPage(res, thermostat, thermostatSummaryArray);
-      });
-
-      api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
-        if (err) {
-          res.redirect('/');
-        } else {
-          thermostat = thermostats.thermostatList[0];
-          renderViewPage(res, thermostat, thermostatSummaryArray);
-        }
-      });
-    }
   });
 }
