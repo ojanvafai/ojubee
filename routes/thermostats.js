@@ -44,11 +44,12 @@ exports.hold = function(req, res) {
     var thermostatId = req.params.id;
     var desiredCool = temperatureAsInt(req.param('desiredCool'));
     var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
+    var fan = req.param('desiredFanMode');
     var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
     // cool_hold_temp, heat_hold_temp, hold_type, hold_hours
     // hold_type values: dateTime, nextTransition, indefinite, holdHours.
     // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
-    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat, 'nextTransition', null)];
+    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat, fan, 'nextTransition', null)];
 
     api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
       var url = error ? '/login?next=' + req.originalUrl : '/thermostats/' + thermostatId;
@@ -111,6 +112,7 @@ function serveViewJson(req, res, thermostatList, thermostatSummary) {
     currentTemp: thermostat.runtime.actualTemperature / 10,
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
+    desiredFanMode: thermostat.runtime.desiredFanMode,
     isHold: thermostat.events.length > 0,
     mode: thermostat.settings.hvacMode,
     name: thermostat.name,

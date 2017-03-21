@@ -1,5 +1,4 @@
 v1
--Add fan on/off
 -Move token refresh to a cron instead of in the critical path for login redirects
 -Cache list of thermostats in the datastore/memcache
 

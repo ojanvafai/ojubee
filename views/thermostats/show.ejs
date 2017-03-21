@@ -43,6 +43,9 @@
       #sensors > div {
         padding: 3px;
       }
+      #fan[state=on] {
+        background-color: #999;
+      }
       .fill {
         position: absolute;
         top: 0;
@@ -84,6 +87,9 @@
         ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
           document.getElementById(id).textContent = state[id];
         });
+
+        var fan = document.getElementById('fan');
+        fan.setAttribute('state', state.desiredFanMode);
       }
 
       function generateNavBar(state) {
@@ -164,6 +170,16 @@
         return id + '=' + encodeURIComponent(g_state[id]);
       }
 
+      function toggleFan() {
+        if (g_state.desiredFanMode == 'auto')
+          g_state.desiredFanMode = 'on';
+        else
+          g_state.desiredFanMode = 'auto';
+
+        applyState(g_state);
+        updateTemp();
+      }
+
       function modifyTemp(id, delta) {
         g_tempsModified = true;
         g_state[id] = g_state[id] + delta;
@@ -212,7 +228,7 @@
         pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
 
         roundTempValues(g_state);
-        pendingRequest.send(encodedValue('desiredHeat') + '&' + encodedValue('desiredCool'));
+        pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
       }
     </script>
   </head>
@@ -233,7 +249,7 @@
 
     <div class="split-container">
       <button class="item" onclick="resumeSchedule()">Resume</button>
-      <button class="item" onclick="alert('TBD')">Fan</button>
+      <button id="fan" class="item" onclick="toggleFan()">Fan</button>
     </div>
 
     <div class="split-container">

@@ -454,13 +454,14 @@ ecobee.SetOccupiedFunction = function(is_occupied, hold_type) {
  * Function passed to the thermostatsUpdate call to set a temperature hold. Need to pass both
  * temperature params.
  */
-ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, hold_type, hold_hours) {
+ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, fan, hold_type, hold_hours) {
   this.type = 'setHold';
 
   this.params = {
     coolHoldTemp: cool_hold_temp,
     heatHoldTemp: heat_hold_temp,
-    holdType: hold_type
+    holdType: hold_type,
+    fan: fan,
   }
 
   if (hold_type === 'holdHours') {
