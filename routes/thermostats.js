@@ -7,7 +7,7 @@ function getThermostatArray(req, res, accessToken, callback) {
   api.calls.thermostatSummary(accessToken, thermostatSummaryOptions, function(err, summary) {
     if (err) {
       console.log("Couldn't get thermostat summary:", err, summary);
-      res.redirect('/login?next=' + req.originalUrl);
+      callback(err);
     } else {
       console.log('thermostatSummary:', summary)
 
@@ -17,7 +17,7 @@ function getThermostatArray(req, res, accessToken, callback) {
         thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
       }
 
-      callback(thermostatArray);
+      callback(null, thermostatArray);
     }
   });
 }
@@ -27,7 +27,12 @@ exports.list = function(req, res){
     if (!tokens) {
       res.redirect('/login?next=' + req.originalUrl);
     } else {
-      getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
+      getThermostatArray(req, res, tokens.access_token, function(err, thermostatArray) {
+        if (err) {
+          res.redirect('/login?next=' + req.originalUrl);
+          return;
+        }
+
         res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
         res.render('thermostats/index', {thermostats: thermostatArray});
       });
@@ -122,7 +127,10 @@ function serveViewJson(req, res, thermostatList, thermostatSummary) {
 exports.json = (req, res) => {
   tokenStore.get((tokens) => {
     if (!tokens) {
-      res.json(null);
+      res.json({
+        "error": "No auth tokens",
+        "redirectUrl": "/login?next=",
+      });
       return;
     }
 
@@ -132,14 +140,24 @@ exports.json = (req, res) => {
     var thermostatList;
     var thermostatSummary;
 
-    getThermostatArray(req, res, tokens.access_token, function(thermostatArray) {
+    getThermostatArray(req, res, tokens.access_token, function(err, thermostatArray) {
+      if (err) {
+        res.json({
+          "error": "Get thermostat summary.",
+          "redirectUrl": "/login?next=",
+        });
+        return;
+      }
       thermostatSummary = thermostatArray;
       serveViewJson(req, res, thermostatList, thermostatSummary);
     });
 
     api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
       if (err) {
-        res.json(null);
+        res.json({
+          "error": "Can't refresh tokens",
+          "redirectUrl": "/login?next=",
+        });
         return;
       }
 

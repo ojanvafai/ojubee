@@ -165,6 +165,11 @@
         pendingUpdateState.addEventListener('load', () =>{
           var newState = pendingUpdateState.response;
 
+          if (newState.error) {
+            window.location = newState.redirectUrl + window.location.pathname;
+            return;
+          }
+
           // Check if desiredCool/heat don't match early return and
           // issue another updateTemp request and loop through till it takes.
           if (g_tempsModified && g_state &&
@@ -192,7 +197,8 @@
       var cachedState = localStorage[thermostatId];
       if (cachedState) {
         g_state = JSON.parse(cachedState);
-        applyState();
+        if (g_state)
+          applyState();
       }
       updateState();
       window.addEventListener('focus', updateState);
@@ -279,6 +285,15 @@
         roundTempValues(g_state);
         pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
       }
+
+      // // ServiceWorker is a progressive technology. Ignore unsupported browsers
+      // if ('serviceWorker' in navigator) {
+      //   navigator.serviceWorker.register('../service-worker.js').then(() => {
+      //     console.log('CLIENT: service worker registration complete.');
+      //   }, () => {
+      //     console.log('CLIENT: service worker registration failure.');
+      //   });
+      // }
     </script>
   </body>
 </html>
