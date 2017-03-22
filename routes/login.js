@@ -2,6 +2,8 @@ var api = require('../ecobee-api');
 var config = require('../config');
 var tokenStore = require('../tokens');
 
+const REFRESH_TRY_COUNT = 2;
+
 exports.list = function(req, res){
   tokenStore.get((tokens) => {
     var next = req.param('next');
@@ -10,21 +12,31 @@ exports.list = function(req, res){
     if (tokens) {
       var refresh_token = tokenStore.refresh_token;
       console.log("Refreshing with these tokens:", tokens);
+      var triesLeft = REFRESH_TRY_COUNT;
 
-      api.calls.refresh(refresh_token, function(err, registerResultObject) {
-        if (err) { // if we error refreshing the token re-login
-          console.log("Error refreshing token:", err);
-          res.redirect('/login/getpin' + nextParams);
-        } else { // refresh of the tokens was successful to we can proceed to the main app
-          console.log('New tokens:', registerResultObject);
-          tokenStore.save(registerResultObject);
+      var refreshTokens = () => {
+        api.calls.refresh(refresh_token, function(err, registerResultObject) {
+          if (err) { // if we error refreshing the token re-login
+            console.log("Error refreshing token:", err);
+            triesLeft--;
+            if (triesLeft) {
+              setTimeout(refreshTokens, 5000);
+            } else {
+              console.log(`Retried refreshing token ${REFRESH_TRY_COUNT} times before giving up.`);
+              res.redirect('/login/getpin' + nextParams);
+            }
+          } else { // refresh of the tokens was successful to we can proceed to the main app
+            console.log('New tokens:', registerResultObject);
+            tokenStore.save(registerResultObject);
 
-          if (next)
-            res.redirect(next);
-          else
-            res.redirect('/');
-        }
-      });
+            if (next)
+              res.redirect(next);
+            else
+              res.redirect('/');
+          }
+        });
+      };
+      refreshTokens();
     } else {
       console.log("No refresh token.");
       res.redirect('/login/getpin' + nextParams);
