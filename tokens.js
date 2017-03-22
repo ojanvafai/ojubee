@@ -19,12 +19,12 @@ exports.save = (tokens) => {
 
   datastore.save(entity).then(
     () => {
-      console.log("Wrote tokens to datastore.");
+      console.log("Wrote tokens to datastore:", tokens);
       memcache.set(TOKEN_KEY, JSON.stringify(tokens), function(err, val) {
         if (err)
           console.log("Couldn't write tokens to memcache:", tokens, err);
         else
-          console.log("Wrote tokens to memcache.");
+          console.log("Wrote tokens to memcache:", val);
       }, 600);
     },
     (err) => {

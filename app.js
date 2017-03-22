@@ -3,7 +3,6 @@
  */
 
 var express = require('express');
-var routes = require('./routes');
 var login = require('./routes/login');
 var thermostats = require('./routes/thermostats');
 var http = require('http');
@@ -20,8 +19,6 @@ app.configure(function(){
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
-  app.use(express.cookieParser('ecobee sample api app')); // using signed cookies to store the refresh token
-  app.use(express.session());
   app.use(app.router);
   app.use(express.static(path.join(__dirname, 'public')));
 });
@@ -42,7 +39,6 @@ app.post('/login', login.create);  // login post handler
 // check routes/thermostats.js for the implementation details of the thermostat routes
 app.post('/thermostats/:id/sethold', thermostats.hold);  // adjust a specific thermostat hold
 app.post('/thermostats/:id/resume', thermostats.resume);  // resume a specific thermostat
-app.post('/thermostats/:id/mode', thermostats.mode); // change the mode of a specific thermostats
 app.get('/thermostats/:id/json', thermostats.json); // view a specific thermostat
 app.get('/thermostats/:id', thermostats.view); // view a specific thermostat
 

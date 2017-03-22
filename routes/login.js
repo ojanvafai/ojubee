@@ -4,15 +4,12 @@ var tokenStore = require('../tokens');
 
 exports.list = function(req, res){
   tokenStore.get((tokens) => {
-    var cookie_refresh = req.cookies.refreshtoken;
-
     var next = req.param('next');
     var nextParams = next ? ('?next=' + next) : '';
 
-    if (cookie_refresh || tokens) {
-      var refresh_token = cookie_refresh || tokenStore.refresh_token;
-
-      console.log(tokens);
+    if (tokens) {
+      var refresh_token = tokenStore.refresh_token;
+      console.log("Refreshing with these tokens:", tokens);
 
       api.calls.refresh(refresh_token, function(err, registerResultObject) {
         if (err) { // if we error refreshing the token re-login

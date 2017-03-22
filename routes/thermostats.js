@@ -71,16 +71,13 @@ exports.resume = function(req, res) {
       if (err) {
         res.redirect('/login?next=' + req.originalUrl);
       } else {
+        // TODO(ojan): WTF with this setTimeout.
         setTimeout(function() {
           res.redirect('/thermostats/' + thermostatId);
         }, 5000);
       }
     });
   });
-}
-
-exports.mode = function(req, res) {
-  res.redirect('/');
 }
 
 function sortByName(a, b) {
