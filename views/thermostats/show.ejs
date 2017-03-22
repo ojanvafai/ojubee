@@ -70,6 +70,43 @@
         color: blue;
       }
     </style>
+  </head>
+
+  <body class="hidden">
+
+    <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+
+    <div id="details">
+      <div class="temp item" id="currentTemp"></div>
+      <div class="split-container">
+        <div class="item" id="sensors"></div>
+        <div class="item" id="override">
+          <div>Mode: <span id="mode"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="split-container">
+      <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
+      <button id="fan" class="item" onclick="toggleFan()">Fan</button>
+    </div>
+
+    <div class="split-container">
+      <div class="cool temp fill" id="desiredCool"></div>
+      <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
+      <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
+    </div>
+
+    <div class="split-container">
+      <div class="heat temp fill" id="desiredHeat"></div>
+      <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
+      <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
+    </div>
+
+    <div id="nav">
+      <a href="/">Ojubee</a>
+    </div>
+
 
     <script>
       var isInitialized = false;
@@ -78,12 +115,6 @@
       var pendingRequest;
       var pendingUpdateState;
       var g_tempsModified = false;
-
-      var cachedState = localStorage[thermostatId];
-      if (cachedState) {
-        g_state = JSON.parse(cachedState);
-        window.addEventListener('DOMContentLoaded', applyState);
-      }
 
       function applyState() {
         if (!isInitialized) {
@@ -123,6 +154,8 @@
       }
 
       function updateState() {
+        showSpinner();
+
         if (pendingUpdateState)
           pendingUpdateState.abort();
 
@@ -145,8 +178,7 @@
           }
 
           g_tempsModified = false;
-          spinner.classList.add('hidden');
-
+          hideSpinner();
           g_state = newState;
           localStorage[thermostatId] = JSON.stringify(g_state);
           applyState();
@@ -157,6 +189,11 @@
         pendingUpdateState.send();
       }
 
+      var cachedState = localStorage[thermostatId];
+      if (cachedState) {
+        g_state = JSON.parse(cachedState);
+        applyState();
+      }
       updateState();
       window.addEventListener('focus', updateState);
 
@@ -219,6 +256,10 @@
         spinner.classList.remove('hidden');
       }
 
+      function hideSpinner() {
+        spinner.classList.add('hidden');
+      }
+
       function updateTemp() {
         if (pendingRequest)
           pendingRequest.abort();
@@ -239,42 +280,5 @@
         pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
       }
     </script>
-  </head>
-
-  <body class="hidden">
-
-    <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
-
-    <div id="details">
-      <div class="temp item" id="currentTemp"></div>
-      <div class="split-container">
-        <div class="item" id="sensors"></div>
-        <div class="item" id="override">
-          <div>Mode: <span id="mode"></span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="split-container">
-      <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
-      <button id="fan" class="item" onclick="toggleFan()">Fan</button>
-    </div>
-
-    <div class="split-container">
-      <div class="cool temp fill" id="desiredCool"></div>
-      <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
-      <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
-    </div>
-
-    <div class="split-container">
-      <div class="heat temp fill" id="desiredHeat"></div>
-      <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
-      <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
-    </div>
-
-    <div id="nav">
-      <a href="/">Ojubee</a>
-    </div>
-
   </body>
 </html>
