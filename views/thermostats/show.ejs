@@ -72,25 +72,41 @@
     </style>
 
     <script>
+      var isInitialized = false;
+      var thermostatId = location.pathname.replace("/thermostats/", "");
       var g_state;
       var pendingRequest;
       var pendingUpdateState;
       var g_tempsModified = false;
-      var thermostatId = location.pathname.replace("/thermostats/", "");
 
-      function applyState(state) {
+      var cachedState = localStorage[thermostatId];
+      if (cachedState) {
+        g_state = JSON.parse(cachedState);
+        window.addEventListener('DOMContentLoaded', applyState);
+      }
+
+      function applyState() {
+        if (!isInitialized) {
+          document.body.classList.remove('hidden');
+          // If we are on initial load, round values to weed out buggy
+          // fractional junk.
+          roundTempValues(g_state);
+          generateNavBar(g_state);
+          isInitialized = true;
+        }
+
         var html = '';
-        state.sensors.forEach(function(sensor) {
+        g_state.sensors.forEach(function(sensor) {
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
         });
         document.getElementById('sensors').innerHTML = html;
 
         ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
-          document.getElementById(id).textContent = state[id];
+          document.getElementById(id).textContent = g_state[id];
         });
 
         var fan = document.getElementById('fan');
-        fan.setAttribute('state', state.desiredFanMode);
+        fan.setAttribute('state', g_state.desiredFanMode);
       }
 
       function generateNavBar(state) {
@@ -114,8 +130,6 @@
         pendingUpdateState.responseType = 'json';
 
         pendingUpdateState.addEventListener('load', () =>{
-          document.body.classList.remove('hidden');
-
           var newState = pendingUpdateState.response;
 
           // Check if desiredCool/heat don't match early return and
@@ -133,16 +147,9 @@
           g_tempsModified = false;
           spinner.classList.add('hidden');
 
-          // Initial load
-          if (!g_state) {
-            // If we are on initial load, round values to weed out buggy
-            // fractional junk.
-            roundTempValues(newState);
-            generateNavBar(newState);
-          }
-
           g_state = newState;
-          applyState(g_state);
+          localStorage[thermostatId] = JSON.stringify(g_state);
+          applyState();
         });
 
         pendingUpdateState.addEventListener('error', () =>{});
@@ -177,7 +184,7 @@
         else
           g_state.desiredFanMode = 'auto';
 
-        applyState(g_state);
+        applyState();
         updateTemp();
       }
 
@@ -195,7 +202,7 @@
             g_state.desiredHeat = g_state.desiredCool - 5;
         }
 
-        applyState(g_state);
+        applyState();
         updateTemp();
       }
 

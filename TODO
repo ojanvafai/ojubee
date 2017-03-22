@@ -1,6 +1,7 @@
 v1
 -Move token refresh to a cron instead of in the critical path for login redirects
 -Cache list of thermostats in the datastore/memcache
+-Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
 
 v2
 -Load all the state via JSON
