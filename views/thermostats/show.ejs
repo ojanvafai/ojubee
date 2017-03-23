@@ -114,7 +114,7 @@
       var g_state;
       var pendingRequest;
       var pendingUpdateState;
-      var g_tempsModified = false;
+      var g_resumingSchedule = false;
 
       function applyState() {
         if (!isInitialized) {
@@ -172,7 +172,7 @@
 
           // Check if desiredCool/heat don't match early return and
           // issue another updateTemp request and loop through till it takes.
-          if (g_tempsModified && g_state &&
+          if (!g_resumingSchedule && g_state &&
               (newState.desiredHeat != g_state.desiredHeat ||
                newState.desiredCool != g_state.desiredCool)) {
             console.log("Numbers didn't take. Retrying.",
@@ -182,7 +182,7 @@
             return;
           }
 
-          g_tempsModified = false;
+          g_resumingSchedule = false;
           hideSpinner();
           g_state = newState;
           localStorage[thermostatId] = JSON.stringify(g_state);
@@ -204,6 +204,7 @@
       window.addEventListener('focus', updateState);
 
       function resumeSchedule() {
+        g_resumingSchedule = true;
         showSpinner();
 
         var xhr = new XMLHttpRequest();
@@ -232,7 +233,7 @@
       }
 
       function modifyTemp(id, delta) {
-        g_tempsModified = true;
+        g_resumingSchedule = false;
         g_state[id] = g_state[id] + delta;
 
         // Must have a minimum of 5 degrees difference.
