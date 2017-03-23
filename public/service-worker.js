@@ -26,7 +26,9 @@ function shouldCache(url) {
   if (url.match(/^chrome-extension:/))
     return false;
 
-  // Only match the main thermostat page.
+  // Only match the main thermostat page and the thermostats json list.
+  // For the json list we want the stale while revalidate behavior since
+  // that almost never changes.
   if (url.match(/\/thermostats\/[^/]+$/)) {
     return true;
   }

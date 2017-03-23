@@ -21,7 +21,7 @@
         float: right;
       }
       .hidden {
-        opacity: 0;
+        display: none;
       }
       .split-container {
         display: flex;
@@ -72,7 +72,7 @@
     </style>
   </head>
 
-  <body class="hidden">
+  <body>
 
     <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
 
@@ -109,7 +109,26 @@
 
 
     <script>
-      var isInitialized = false;
+      var g_thermostats;
+
+      fetch('/thermostats/json')
+        .then((response) => {
+          if (!response.ok) {
+            alert("Couldn't load thermostat list. Please reload.");
+            return;
+          }
+
+          response.json()
+            .then((json) => {
+              console.log(json);
+              g_thermostats = json.thermostats;
+              generateNavBar();
+            });
+        })
+        .catch(() => {
+          alert("Couldn't load thermostat list. Please reload.");
+        });
+
       var thermostatId = location.pathname.replace("/thermostats/", "");
       var g_state;
       var pendingRequest;
@@ -117,12 +136,6 @@
       var g_tempsModified = false;
 
       function applyState() {
-        if (!isInitialized) {
-          document.body.classList.remove('hidden');
-          generateNavBar(g_state);
-          isInitialized = true;
-        }
-
         var html = '';
         g_state.sensors.forEach(function(sensor) {
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
@@ -137,14 +150,14 @@
         fan.setAttribute('state', g_state.desiredFanMode);
       }
 
-      function generateNavBar(state) {
+      function generateNavBar() {
         var navBar = document.getElementById('nav');
 
-        state.thermostatSummary.forEach((thermostat) => {
+        g_thermostats.forEach((thermostat) => {
           var a = document.createElement('a');
           a.href = `/thermostats/${thermostat.id}`;
           a.textContent = thermostat.name;
-          if (thermostat.id == state.thermostatId)
+          if (thermostat.id == thermostatId)
             a.className = 'current';
           navBar.appendChild(a);
         });
@@ -182,7 +195,6 @@
           g_tempsModified = false;
           hideSpinner();
           g_state = newState;
-          localStorage[thermostatId] = JSON.stringify(g_state);
           applyState();
         });
 
@@ -191,12 +203,6 @@
         pendingUpdateState.send();
       }
 
-      var cachedState = localStorage[thermostatId];
-      if (cachedState) {
-        g_state = JSON.parse(cachedState);
-        if (g_state)
-          applyState();
-      }
       updateState();
       window.addEventListener('focus', updateState);
 

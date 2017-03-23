@@ -1,7 +1,3 @@
-/**
- * Module dependencies.
- */
-
 var express = require('express');
 var login = require('./routes/login');
 var thermostats = require('./routes/thermostats');
@@ -27,7 +23,6 @@ app.configure('development', function(){
   app.use(express.errorHandler());
 });
 
-// Define all of the applicaiton endpoints for get and post
 app.get('/', thermostats.list);
 
 // check routes/login.js for the implementation details of the login routes
@@ -39,7 +34,8 @@ app.post('/login', login.create);  // login post handler
 // check routes/thermostats.js for the implementation details of the thermostat routes
 app.post('/thermostats/:id/sethold', thermostats.hold);  // adjust a specific thermostat hold
 app.post('/thermostats/:id/resume', thermostats.resume);  // resume a specific thermostat
-app.get('/thermostats/:id/json', thermostats.json); // view a specific thermostat
+app.get('/thermostats/:id/json', thermostats.json); // Data for thermostat
+app.get('/thermostats/json', thermostats.listJson); // List of thermostats
 app.get('/thermostats/:id', thermostats.view); // view a specific thermostat
 
 http.createServer(app).listen(app.get('port'), function(){

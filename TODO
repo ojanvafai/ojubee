@@ -1,12 +1,8 @@
 v1
--Move token refresh to a cron instead of in the critical path for login redirects
 -Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
 -Show schedule overrides
-
--Move thermostat summmary to separate json request so serviceworker can cache it
--Drop thermostat summary from the indv thermostat request to make faster
+-Use fetch everywhere instead of xhr
 -Make home page have big buttons for the thermostats
--Change URLs to human readable now that we reliably have the thermostat summary
 
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
@@ -18,4 +14,3 @@ v2
 v3
 -Change ojubee page to load state via JSON so it's not incorrectly cached indefinitely
 if the thermostat list changes.
--Make URLs put human readable thermostat name without the /thermostats/
