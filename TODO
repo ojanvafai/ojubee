@@ -3,7 +3,6 @@ v1
 -Show schedule overrides
 -Use fetch everywhere instead of xhr
 -Make home page have big buttons for the thermostats
--Add a manifest
 
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
@@ -13,5 +12,6 @@ v2
 -Allow changing mode
 
 v3
+-Make into SPA so page transitions can be less jarring.
 -Change ojubee page to load state via JSON so it's not incorrectly cached indefinitely
 if the thermostat list changes.

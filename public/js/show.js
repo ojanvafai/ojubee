@@ -5,7 +5,8 @@ var g_pendingUpdateState;
 var g_tempsModified = false;
 
 function applyState() {
-  document.getElementById('details').classList.remove('hidden');
+  document.getElementById('container').classList.remove('hidden');
+  document.getElementById('load-spinner').style.display = 'none';
 
   var html = '';
   g_state.sensors.forEach(function(sensor) {
@@ -22,8 +23,6 @@ function applyState() {
 }
 
 function updateState() {
-  showSpinner();
-
   if (g_pendingUpdateState)
     g_pendingUpdateState.abort();
 

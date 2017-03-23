@@ -7,6 +7,15 @@
     <script src="/js/thermostats.js"></script>
     <script src="/js/show.js"></script>
     <style>
+      #container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        transition: opacity 1s;
+      }
+      #container.hidden {
+        flex: 0;
+      }
       #details {
         flex: 1;
         display: flex;
@@ -17,14 +26,19 @@
         font-size: 20px;
       }
       img {
-        opacity: 1;
-        transition: opacity 0.5s;
         width: 50px;
+      }
+      #load-spinner {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+      }
+      #spinner {
+        opacity: 1;
         margin: 10px;
         float: right;
-      }
-      .hidden {
-        opacity: 0 !important;
+        transition: opacity 0.5s;
       }
       .split-container {
         display: flex;
@@ -76,37 +90,41 @@
   </head>
 
   <body>
-    <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+    <div id="load-spinner">
+      <img src="/img/spinner.gif">
+    </div>
 
-    <div id="details" class="hidden">
-      <div class="temp item" id="currentTemp"></div>
-      <div class="split-container">
-        <div class="item" id="sensors"></div>
-        <div class="item" id="override">
-          <div>Mode: <span id="mode"></span></div>
+    <div id="container" class="hidden">
+      <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+
+      <div id="details">
+        <div class="temp item" id="currentTemp"></div>
+        <div class="split-container">
+          <div class="item" id="sensors"></div>
+          <div class="item" id="override">
+            <div>Mode: <span id="mode"></span></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="split-container">
-      <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
-      <button id="fan" class="item" onclick="toggleFan()">Fan</button>
-    </div>
+      <div class="split-container">
+        <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
+        <button id="fan" class="item" onclick="toggleFan()">Fan</button>
+      </div>
 
-    <div class="split-container">
-      <div class="cool temp fill" id="desiredCool"></div>
-      <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
-      <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
-    </div>
+      <div class="split-container">
+        <div class="cool temp fill" id="desiredCool"></div>
+        <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
+        <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
+      </div>
 
-    <div class="split-container">
-      <div class="heat temp fill" id="desiredHeat"></div>
-      <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
-      <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
-    </div>
+      <div class="split-container">
+        <div class="heat temp fill" id="desiredHeat"></div>
+        <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
+        <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
+      </div>
 
-    <div id="nav">
-      <a style="opacity: 0">Placeholder</a>
+      <div id="nav"></div>
     </div>
   </body>
 </html>
