@@ -119,9 +119,6 @@
       function applyState() {
         if (!isInitialized) {
           document.body.classList.remove('hidden');
-          // If we are on initial load, round values to weed out buggy
-          // fractional junk.
-          roundTempValues(g_state);
           generateNavBar(g_state);
           isInitialized = true;
         }
