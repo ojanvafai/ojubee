@@ -1,18 +1,21 @@
 v1
 -Move token refresh to a cron instead of in the critical path for login redirects
--Cache list of thermostats in the datastore/memcache
 -Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
+-Show schedule overrides
+
+-Move thermostat summmary to separate json request so serviceworker can cache it
+-Drop thermostat summary from the indv thermostat request to make faster
+-Make home page have big buttons for the thermostats
+-Change URLs to human readable now that we reliably have the thermostat summary
 
 v2
--Load all the state via JSON
--Do a proper appshell w serviceworker and offline
--Make changing thermostats do in-page refresh
--Don't hide the nav-bar on transitions, but still don't show the main thermostat content
- until the json has loaded.
--Make URLs put human readable thermostat name without the /thermostats/
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
 -If the last update time is not recent, put it on the page somewhere.
 -Have a selector for what action to take (2hr, 4hr, hold, next schedule)
--Don't show resume if there's no override
--Cache the individual thermostat data and update async so tab transitions are fast if you want to just modify the setting. Maybe periodically have server sync so it's always up to date?
+-Periodically have server sync thermostat data so it's always up to date and push changes using ServiceWorker + budget API.
 -Allow changing mode
+
+v3
+-Change ojubee page to load state via JSON so it's not incorrectly cached indefinitely
+if the thermostat list changes.
+-Make URLs put human readable thermostat name without the /thermostats/

@@ -5,42 +5,51 @@ var tokenStore = require('../tokens');
 const REFRESH_TRY_COUNT = 2;
 
 exports.list = function(req, res){
-  tokenStore.get((tokens) => {
-    var next = req.param('next');
-    var nextParams = next ? ('?next=' + next) : '';
+  // No next param means this is just for the cron, so serve response
+  // instead of redirecting.
+  var next = req.param('next');
+  var nextParams = next ? ('?next=' + next) : '';
 
-    if (tokens) {
-      var refresh_token = tokens.refresh_token;
-      console.log("Refreshing with these tokens:", tokens);
-      var triesLeft = REFRESH_TRY_COUNT;
-
-      var refreshTokens = () => {
-        api.calls.refresh(refresh_token, function(err, registerResultObject) {
-          if (err) { // if we error refreshing the token re-login
-            console.log("Error refreshing token:", err);
-            triesLeft--;
-            if (triesLeft) {
-              setTimeout(refreshTokens, 5000);
-            } else {
-              console.log(`Retried refreshing token ${REFRESH_TRY_COUNT} times before giving up.`);
-              res.redirect('/login/getpin' + nextParams);
-            }
-          } else { // refresh of the tokens was successful to we can proceed to the main app
-            console.log('New tokens:', registerResultObject);
-            tokenStore.save(registerResultObject);
-
-            if (next)
-              res.redirect(next);
-            else
-              res.redirect('/');
-          }
-        });
-      };
-      refreshTokens();
-    } else {
-      console.log("No refresh token.");
+  function refreshFailed(msg) {
+    console.log(msg);
+    if (next)
       res.redirect('/login/getpin' + nextParams);
+    else
+      res.status(500).send(msg);
+  }
+
+  tokenStore.get((tokens) => {
+    if (!tokens) {
+      refreshFailed("No refresh token.");
+      return;
     }
+
+    var refresh_token = tokens.refresh_token;
+    console.log("Refreshing with these tokens:", tokens);
+    var triesLeft = REFRESH_TRY_COUNT;
+
+    var refreshTokens = () => {
+      api.calls.refresh(refresh_token, function(err, registerResultObject) {
+        if (err) { // if we error refreshing the token re-login
+          console.log("Error refreshing token:", err);
+          triesLeft--;
+
+          if (triesLeft)
+            setTimeout(refreshTokens, 5000);
+          else
+            refreshFailed(`Retried refreshing token ${REFRESH_TRY_COUNT} times before giving up.`);
+        } else { // refresh of the tokens was successful to we can proceed to the main app
+          console.log('New tokens:', registerResultObject);
+          tokenStore.save(registerResultObject);
+
+          if (next)
+            res.redirect(next);
+          else
+            res.status(200).send("Refresh succeeded.");
+        }
+      });
+    };
+    refreshTokens();
   });
 };
 
