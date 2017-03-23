@@ -33,7 +33,6 @@ exports.list = function(req, res){
           return;
         }
 
-        res.cookie('refreshtoken', tokens.refresh_token, { expires: new Date(Date.now() + 9000000)});
         res.render('thermostats/index', {thermostats: thermostatArray});
       });
     }
