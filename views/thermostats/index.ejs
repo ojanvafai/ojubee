@@ -3,15 +3,13 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' href='/css/base.css' />
+    <script src="/js/thermostats.js"></script>
   </head>
 
   <body>
     <div style="flex:1"></div>
     <div id="nav">
-      <a href="/" class="current">Ojubee</a>
-      <% for(var i = 0; i < thermostats.length; i++) { %>
-        <a href="/thermostats/<%= thermostats[i].id %>"><%= thermostats[i].name  %></a>
-      <% } %>
+      <a style="opacity: 0">Placeholder</a>
     </div>
   </body>
 </html>
