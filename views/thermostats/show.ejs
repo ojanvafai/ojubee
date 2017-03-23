@@ -286,14 +286,15 @@
         pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
       }
 
-      // // ServiceWorker is a progressive technology. Ignore unsupported browsers
-      // if ('serviceWorker' in navigator) {
-      //   navigator.serviceWorker.register('../service-worker.js').then(() => {
-      //     console.log('CLIENT: service worker registration complete.');
-      //   }, () => {
-      //     console.log('CLIENT: service worker registration failure.');
-      //   });
-      // }
+      // ServiceWorker is a progressive technology. Ignore unsupported browsers
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../service-worker.js').then(
+          () => {},
+          () => {
+            console.log('CLIENT: service worker registration failure.');
+          }
+        );
+      }
     </script>
   </body>
 </html>

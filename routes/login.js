@@ -10,7 +10,7 @@ exports.list = function(req, res){
     var nextParams = next ? ('?next=' + next) : '';
 
     if (tokens) {
-      var refresh_token = tokenStore.refresh_token;
+      var refresh_token = tokens.refresh_token;
       console.log("Refreshing with these tokens:", tokens);
       var triesLeft = REFRESH_TRY_COUNT;
 
@@ -62,7 +62,7 @@ exports.create = function(req, res) {
         errorMessage = 'Polling too fast: Please wait ' + interval + ' seconds before attempting to complete the link again.';
         tooFast = true;
       } else {
-        errorMessage = 'you must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
+        errorMessage = 'You must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
       }
 
       res.render('login/getpin', {
