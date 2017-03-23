@@ -11,6 +11,7 @@ fetch('/thermostats/json')
       .then((json) => {
         g_thermostats = json.thermostats;
         generateNavBar();
+        document.body.classList.remove('hidden');
       });
   })
   .catch(() => {
@@ -18,13 +19,13 @@ fetch('/thermostats/json')
   });
 
 function appendLink(container, href, text) {
-    var a = document.createElement('a');
-    a.href = href;
-    a.textContent = text;
-    console.log(a.href, window.location.pathname);
-    if (a.pathname == window.location.pathname)
-      a.className = 'current';
-    container.appendChild(a);
+  var a = document.createElement('a');
+  a.href = href;
+  a.textContent = text;
+  console.log(a.href, window.location.pathname);
+  if (a.pathname == window.location.pathname)
+    a.className = 'current';
+  container.appendChild(a);
 }
 
 function generateNavBar() {

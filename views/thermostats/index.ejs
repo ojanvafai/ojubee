@@ -5,12 +5,16 @@
     <link rel="manifest" href="/manifest.json">
     <link rel='stylesheet' href='/css/base.css' />
     <script src="/js/thermostats.js"></script>
+
+    <style>
+      body {
+        transition: opacity 0.5s;
+      }
+    </style>
   </head>
 
-  <body>
+  <body class="hidden">
     <div style="flex:1"></div>
-    <div id="nav">
-      <a style="opacity: 0">Placeholder</a>
-    </div>
+    <div id="nav"></div>
   </body>
 </html>
