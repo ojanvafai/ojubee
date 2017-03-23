@@ -220,7 +220,7 @@ var api = {
     var options = {
       host: this.host,
       port: this.port,
-      path: '/home/' + this.apiRoot + 'thermostatSummary',
+      path: '/home' + this.apiRoot + 'thermostatSummary',
       method: 'GET',
       headers: {
         Accept:'application/json',
@@ -326,7 +326,7 @@ var api = {
     var options = {
       host: this.host,
       port: this.port,
-      path: '/home/' + this.apiRoot + 'thermostat?json=true&token=' + token,
+      path: '/home' + this.apiRoot + 'thermostat?json=true&token=' + token,
       method: 'POST',
       headers: {
         Accept:'application/json',
