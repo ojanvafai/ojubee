@@ -21,7 +21,7 @@
         float: right;
       }
       .hidden {
-        display: none;
+        opacity: 0 !important;
       }
       .split-container {
         display: flex;
@@ -76,7 +76,7 @@
 
     <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
 
-    <div id="details">
+    <div id="details" class="hidden">
       <div class="temp item" id="currentTemp"></div>
       <div class="split-container">
         <div class="item" id="sensors"></div>
@@ -104,9 +104,8 @@
     </div>
 
     <div id="nav">
-      <a href="/">Ojubee</a>
+      <a style="opacity: 0">Placeholder</a>
     </div>
-
 
     <script>
       var g_thermostats;
@@ -120,7 +119,6 @@
 
           response.json()
             .then((json) => {
-              console.log(json);
               g_thermostats = json.thermostats;
               generateNavBar();
             });
@@ -136,6 +134,8 @@
       var g_tempsModified = false;
 
       function applyState() {
+        document.getElementById('details').classList.remove('hidden');
+
         var html = '';
         g_state.sensors.forEach(function(sensor) {
           html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
@@ -152,6 +152,13 @@
 
       function generateNavBar() {
         var navBar = document.getElementById('nav');
+        // Remove the placeholder.
+        navBar.textContent = "";
+
+        var a = document.createElement('a');
+        a.href = "/";
+        a.textContent = "Ojubee";
+        navBar.appendChild(a);
 
         g_thermostats.forEach((thermostat) => {
           var a = document.createElement('a');
