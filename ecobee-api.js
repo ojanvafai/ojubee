@@ -458,16 +458,17 @@ ecobee.SetOccupiedFunction = function(is_occupied, hold_type) {
 ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, fan, hold_type, hold_hours) {
   this.type = 'setHold';
 
+  var isHours = hold_type != 'nextTransition' && hold_type != 'indefinite';
+
   this.params = {
     coolHoldTemp: cool_hold_temp,
     heatHoldTemp: heat_hold_temp,
-    holdType: hold_type,
+    holdType: isHours ? 'holdHours' : hold_type,
     fan: fan,
   }
 
-  if (hold_type === 'holdHours') {
-    this.params.holdHours = hold_hours;
-  }
+  if (isHours)
+    this.params.holdHours = hold_type;
 }
 /**
  * get the hierarchy for EMS thermostats based on the node passed in

@@ -66,10 +66,10 @@ exports.hold = function(req, res) {
   var desiredCool = temperatureAsInt(req.param('desiredCool'));
   var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
   var fan = req.param('desiredFanMode');
-  // cool_hold_temp, heat_hold_temp, hold_type, hold_hours
+  var duration = req.param('duration');
   // hold_type values: dateTime, nextTransition, indefinite, holdHours.
   // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
-  var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, 'nextTransition', null);
+  var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
   updateThermostats(req, res, updateFunction);
 }
 
@@ -100,12 +100,38 @@ function serveViewJson(req, res, thermostatList) {
     })
   });
 
+  var overrideTime;
+  if (thermostat.events.length > 1) {
+    // TODO: Probably shouldn't hard code this and instead just check
+    // if the data is more than a year out.
+    if (thermostat.events[0]['endDate'] == '2035-01-01') {
+      overrideTime = '∞';
+    } else {
+      var endTime = thermostat.events[0]['endTime'];
+      var parts = endTime.split(':');
+      var hours = Number(parts[0]);
+      var minutes = parts[1];
+      var suffix;
+      if (hours < 12) {
+        suffix = 'AM';
+        if (hours == 00)
+          hours = 12;
+      } else {
+        suffix = 'PM';
+        if (hours != 12)
+          hours -= 12;
+      }
+
+      overrideTime = `${hours}:${minutes} ${suffix}`;
+    }
+  }
+
   res.json({
     currentTemp: thermostat.runtime.actualTemperature / 10,
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
     desiredFanMode: thermostat.runtime.desiredFanMode,
-    overrideTime: thermostat.events.length > 1 ? thermostat.events[0]['endTime'] : null,
+    overrideTime: overrideTime,
     mode: thermostat.settings.hvacMode,
     name: thermostat.name,
     sensors: sensors.sort(sortByName),

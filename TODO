@@ -1,6 +1,3 @@
-v1
--Have a selector for what action to take (2hr, 4hr, hold, next schedule)
-
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
 -If the last update time is not recent, put it on the page somewhere.

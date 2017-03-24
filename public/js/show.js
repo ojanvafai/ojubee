@@ -159,10 +159,8 @@ function updateTemp() {
 
   roundTempValues(g_state);
 
-  var data = '';
-  ['desiredHeat', 'desiredCool', 'desiredFanMode'].forEach((id) => {
-    data += encodedValue(id);
-  })
+  var data = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
+  data += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
   g_pendingRequest.send(data);
 }
 
