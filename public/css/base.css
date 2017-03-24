@@ -1,5 +1,6 @@
 html {
   height: 100%;
+  background-color: #eee;
 }
 
 body {
@@ -16,7 +17,7 @@ body {
 
 #nav {
   background-color: black;
-  color: #999;
+  color: #eee;
   display: flex;
   flex-wrap: wrap;
 }
@@ -29,11 +30,11 @@ body {
   white-space: nowrap;
   font-size: 20px;
   text-align: center;
-  color: #999;
+  color: #eee;
   text-decoration: none;
 }
 
 #nav > .current {
-  background-color: #999;
+  background-color: #eee;
   color: black;
 }

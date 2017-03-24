@@ -16,8 +16,9 @@ app.configure(function(){
   app.use(express.bodyParser());
   app.use(express.methodOverride());
   app.use(function(req, res, next){
-    if (req.host != "localhost" && !req.secure) {
-      res.redirect(`https://${req.host}${req.url}`);
+    if (req.host != 'localhost' && req.protocol == 'http') {
+      res.status(200).send(req.protocol);
+      // res.redirect(`https://${req.host}${req.url}`);
       return;
     }
 

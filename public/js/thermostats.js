@@ -11,7 +11,8 @@ fetch('/thermostats/json')
       .then((json) => {
         g_thermostats = json.thermostats;
         generateNavBar();
-        document.body.classList.remove('hidden');
+        if (g_pageSpecificNavCallback)
+          g_pageSpecificNavCallback();
       });
   })
   .catch(() => {
@@ -30,9 +31,6 @@ function appendLink(container, href, text) {
 
 function generateNavBar() {
   var navBar = document.getElementById('nav');
-  // Remove the placeholder.
-  navBar.textContent = "";
-
   appendLink(navBar, "/", "Ojubee");
   g_thermostats.forEach((thermostat) => {
     appendLink(navBar, `/thermostats/${thermostat.id}`, thermostat.name);

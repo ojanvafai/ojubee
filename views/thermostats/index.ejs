@@ -4,17 +4,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
     <link rel='stylesheet' href='/css/base.css' />
+
+    <script>
+      function g_pageSpecificNavCallback() {
+        document.body.classList.remove('hidden');
+
+        var container = document.getElementById('container');
+        g_thermostats.forEach((thermostat) => {
+          var div = document.createElement('div');
+          container.appendChild(div);
+          appendLink(div, `/thermostats/${thermostat.id}`, thermostat.name);
+        });
+      }
+    </script>
+
     <script src="/js/thermostats.js"></script>
 
     <style>
       body {
         transition: opacity 0.5s;
+        font-size: 40px;
+      }
+      a {
+        text-decoration: none;
+        color: black;
+      }
+      #container {
+        display: flex;
+        flex-direction: column;
+
+      }
+      #container > * {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border: 1px solid;
+        padding: 30px;
+        margin: 0 30px 30px;
+        background-color: white;
+      }
+      #title {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     </style>
   </head>
 
   <body class="hidden">
-    <div style="flex:1"></div>
+    <div id="title">Ojubee</div>
+    <div id="container">
+    </div>
     <div id="nav"></div>
   </body>
 </html>
