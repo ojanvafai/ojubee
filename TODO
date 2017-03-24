@@ -1,10 +1,10 @@
 v1
 -Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
+-Have a selector for what action to take (2hr, 4hr, hold, next schedule)
 
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
 -If the last update time is not recent, put it on the page somewhere.
--Have a selector for what action to take (2hr, 4hr, hold, next schedule)
 -Periodically have server sync thermostat data so it's always up to date and push changes using ServiceWorker + budget API.
 -Allow changing mode
 

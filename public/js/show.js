@@ -38,6 +38,9 @@ function applyState() {
 }
 
 function updateState() {
+  if (g_state)
+    showSpinner();
+
   if (g_pendingUpdateState)
     g_pendingUpdateState.abort();
 
@@ -158,9 +161,35 @@ function updateTemp() {
   g_pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+var g_updateTimer;
+var g_updateFreqency = 30000;
+
+function startUpdates() {
+  if (g_updateTimer)
+    return;
   updateState();
-  window.addEventListener('focus', updateState);
+  g_updateTimer = setInterval(updateState, g_updateFreqency);
+}
+
+function stopUpdates() {
+  if (!g_updateTimer)
+    return;
+  clearInterval(g_updateTimer);
+  g_updateTimer = null;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('focus', startUpdates);
+  window.addEventListener('blur', stopUpdates);
+  window.addEventListener('visibilityChange', () => {
+    if (document.visibilityState == 'visible')
+      startUpdates();
+    else
+      stopUpdates();
+  });
+
+  if (document.visibilityState == 'visible')
+    startUpdates();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('../service-worker.js').then(
