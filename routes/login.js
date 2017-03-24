@@ -102,13 +102,15 @@ exports.getpin = function(req, res) {
     if (err) {
       res.redirect('/login/error');
     } else {
-      console.log(pinResults);
-      res.render('login/getpin', {
-        pin: pinResults.ecobeePin,
-        code: pinResults.code,
-        interval: pinResults.interval,
-        isError: false,
-        tooFast: false
+      tokenStore.delete(() => {
+        console.log(pinResults);
+        res.render('login/getpin', {
+          pin: pinResults.ecobeePin,
+          code: pinResults.code,
+          interval: pinResults.interval,
+          isError: false,
+          tooFast: false
+        });
       });
     }
   });

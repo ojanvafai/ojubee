@@ -10,6 +10,11 @@ fetch('/thermostats/json')
 
     response.json()
       .then((json) => {
+        if (json.error) {
+          window.location = json.redirectUrl + window.location.pathname;
+          return;
+        }
+
         g_thermostats = json.thermostats;
         generateNavBar();
         if (g_pageSpecificNavCallback)
