@@ -34,6 +34,7 @@ app.get('/login/error', login.error); // error page
 app.post('/login', login.create);  // login post handler
 
 // check routes/thermostats.js for the implementation details of the thermostat routes
+app.post('/thermostats/:id/setmode', thermostats.mode);  // adjust a specific thermostat system mode
 app.post('/thermostats/:id/sethold', thermostats.hold);  // adjust a specific thermostat hold
 app.post('/thermostats/:id/resume', thermostats.resume);  // resume a specific thermostat
 app.get('/thermostats/:id/json', thermostats.json); // Data for thermostat

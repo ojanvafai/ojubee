@@ -1,4 +1,7 @@
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
--Allow changing mode
+-Get rid of XMLHttpRequest copy-pasta
+
 -Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.
+-Add ability to change schedule
+-Add ability to set vacation

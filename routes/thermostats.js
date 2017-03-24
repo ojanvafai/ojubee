@@ -47,13 +47,14 @@ function temperatureAsInt(temp) {
   return parseInt(temp, 10) * 10; // our canonical form is F * 10
 }
 
-function updateThermostats(req, res, updateFunction) {
+function updateThermostats(req, res, options) {
   tokenStore.get((tokens) => {
-    var thermostatId = req.params.id;
-    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId);
-    var functions_array = [updateFunction];
+    if (!tokens) {
+      serveJsonLoginRedirect(res, "No auth tokens");
+      return;
+    }
 
-    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, (err, val) => {
+    api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
       if (err)
         serveJsonLoginRedirect(res, "Couldn't update thermostats.");
       else
@@ -70,12 +71,21 @@ exports.hold = function(req, res) {
   // hold_type values: dateTime, nextTransition, indefinite, holdHours.
   // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
   var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
-  updateThermostats(req, res, updateFunction);
+  var options = new api.ThermostatsUpdateOptions(req.params.id, [updateFunction]);
+  updateThermostats(req, res, options);
 }
 
 exports.resume = function(req, res) {
   var updateFunction = new api.ResumeProgramFunction();
-  updateThermostats(req, res, updateFunction);
+  var options = new api.ThermostatsUpdateOptions(req.params.id, [updateFunction]);
+  updateThermostats(req, res, options);
+}
+
+exports.mode = function(req, res) {
+  var thermostats_update_options = new api.ThermostatsUpdateOptions(req.params.id);
+  var settings = new api.ModeUpdateSettings(req.param('mode'));
+  var options = new api.ThermostatsUpdateOptions(req.params.id, null, settings);
+  updateThermostats(req, res, options);
 }
 
 function sortByName(a, b) {

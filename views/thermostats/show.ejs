@@ -10,6 +10,7 @@
       * {
         flex-wrap: wrap;
         min-width: min-content;
+        white-space: nowrap;
       }
       #container {
         display: flex;
@@ -41,7 +42,7 @@
       }
       #spinner {
         opacity: 1;
-        margin: 10px;
+        margin: 5px;
         transition: opacity 0.5s;
       }
       #override {
@@ -70,12 +71,11 @@
       }
       #currentTemp {
         font-size: 40px;
-        display: flex;
-        justify-content: center;
       }
       #sensors > *,
       #state > * {
         padding: 3px;
+        display: flex;
       }
       #fan[state=on] {
         background-color: #eee;
@@ -136,21 +136,30 @@
     </div>
 
     <div id="container" class="hidden">
-      <div id="top-toolbar">
-        <div style="display: flex; flex-wrap: nowrap;">
+      <div id="top-toolbar" class="split-container">
+        <div class="item" style="display: flex; flex-wrap: nowrap;">
           <div id="coolOn" class="hvacState">Cool</div>
           <div id="heatOn" class="hvacState">Heat</div>
           <div id="fanOn" class="hvacState">Fan</div>
         </div>
-        <div id="currentTemp"></div>
-        <div style="text-align: right"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+        <div class="item" style="display: flex; justify-content: space-between;">
+          <div id="currentTemp"></div>
+          <div style="text-align: right"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+        </div>
       </div>
 
       <div id="details">
         <div class="split-container">
-          <div class="item" id="sensors"></div>
           <div class="item" id="state">
-            <div>Mode: <span id="mode"></span></div>
+            <div>Mode:
+              <select id="mode" onchange="updateMode()">
+                <option value="heat">Heat</option>
+                <option value="cool">Cool</option>
+                <option value="auto">Auto</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+
             <div>
               Hold:
               <select id="duration">
@@ -161,6 +170,8 @@
               </select>
             </div>
           </div>
+
+          <div class="item" id="sensors"></div>
         </div>
       </div>
 

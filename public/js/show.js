@@ -22,9 +22,17 @@ function applyState() {
   });
   document.getElementById('sensors').innerHTML = html;
 
-  ["currentTemp", "desiredCool", "desiredHeat", "mode",].forEach((id) => {
+  ["currentTemp", "desiredCool", "desiredHeat",].forEach((id) => {
     document.getElementById(id).textContent = g_state[id];
   });
+
+  var mode = document.getElementById('mode');
+  for (var i = 0; i < mode.length; i++) {
+    if (mode.item(i).value == g_state.mode) {
+      mode.selectedIndex = i;
+      break;
+    }
+  }
 
   var fan = document.getElementById('fan');
   fan.setAttribute('state', g_state.desiredFanMode);
@@ -167,6 +175,28 @@ function updateTemp() {
 
   var data = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
   data += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
+  g_pendingRequest.send(data);
+}
+
+function updateMode() {
+  var newMode = document.getElementById('mode').selectedOptions[0].value;
+  console.log(newMode);
+
+  showSpinner();
+
+  g_pendingRequest = new XMLHttpRequest();
+  g_pendingRequest.addEventListener('load', updateState);
+  g_pendingRequest.addEventListener('error', () => {
+    updateState();
+    alert('Update failed. Reload the page to be safe.');
+  });
+
+  g_pendingRequest.open("POST", `/thermostats/${g_thermostatId}/setmode`);
+  g_pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
+
+  roundTempValues(g_state);
+
+  var data = `mode=${encodeURIComponent(newMode)}`;
   g_pendingRequest.send(data);
 }
 

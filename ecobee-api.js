@@ -71,6 +71,7 @@ var api = {
 
     if(options.method && options.method.toLowerCase() === 'post') {
       console.log('posting data:' + dataString);
+      console.log(options.path)
       req.write(dataString);
     }
 
@@ -310,17 +311,7 @@ var api = {
    * so that multiple updates can be completed at one time.
    * updates are completed in order they appear in the functions array
    */
-  updateThermostats: function(token, thermostats_update_options, functions_array, thermostat_object, callback) {
-    if(!thermostats_update_options) {
-      thermostats_update_options = new ecobee.ThermostatsUpdateOptions();
-    }
-
-    thermostats_update_options.functions = functions_array;
-
-    if(thermostat_object) {
-      thermostats_update_options.thermostat = thermostat_object;
-    }
-
+  updateThermostats: function(token, thermostats_update_options, callback) {
     var dataString = JSON.stringify(thermostats_update_options);
 
     var options = {
@@ -389,17 +380,28 @@ ecobee.ThermostatsOptions = function(thermostat_ids) {
     includeWeather: true
   }
 };
+// Change HVAC mode.
+ecobee.ModeUpdateSettings = function(mode) {
+  this.settings = {
+    "hvacMode": mode,
+  };
+};
 /**
  * update options that control how the thermostats update call behaves
  * Functions get pushed into the functions array which are defined
  * farther down.
  */
-ecobee.ThermostatsUpdateOptions = function(thermostat_ids) {
+ecobee.ThermostatsUpdateOptions = function(thermostat_ids, opt_functions, opt_thermostat) {
   this.selection = {
     selectionType: 'thermostats',
     selectionMatch: thermostat_ids
   };
-  this.functions = [];
+
+  if (opt_functions)
+    this.functions = opt_functions;
+
+  if (opt_thermostat)
+    this.thermostat = opt_thermostat;
 };
 /**
  * options to pass to the summary call
@@ -576,6 +578,7 @@ exports.ResumeProgramFunction = ecobee.ResumeProgramFunction;
 exports.ThermostatsOptions = ecobee.ThermostatsOptions;
 exports.ThermostatSummaryOptions = ecobee.ThermostatSummaryOptions;
 exports.BreadCrumbOptions = ecobee.BreadCrumbOptions;
+exports.ModeUpdateSettings = ecobee.ModeUpdateSettings;
 exports.ThermostatsUpdateOptions = ecobee.ThermostatsUpdateOptions;
 exports.AlertsOptions = ecobee.AlertsOptions;
 exports.RegisterOptions = ecobee.RegisterOptions;
