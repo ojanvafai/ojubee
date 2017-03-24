@@ -4,6 +4,14 @@ var g_pendingRequest;
 var g_pendingUpdateState;
 var g_tempsModified = false;
 
+function applyOnState(idPrefix, keyword) {
+  var id = idPrefix + 'On';
+  if (g_state.equipmentStatus.indexOf(keyword) == -1)
+    document.getElementById(id).classList.remove(id);
+  else
+    document.getElementById(id).classList.add(id);
+}
+
 function applyState() {
   document.getElementById('container').classList.remove('hidden');
   document.getElementById('load-spinner').style.display = 'none';
@@ -22,7 +30,11 @@ function applyState() {
   fan.setAttribute('state', g_state.desiredFanMode);
 
   var override = document.getElementById('override');
-  override.textContent = g_state.override ? `Override until ${g_state.override.endTime}` : '';
+  override.textContent = g_state.overrideTime ? `Override until ${g_state.overrideTime}` : '';
+
+  applyOnState('heat', 'auxHeat');
+  applyOnState('cool', 'compCool');
+  applyOnState('fan', 'fan');
 }
 
 function updateState() {

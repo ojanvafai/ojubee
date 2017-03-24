@@ -85,6 +85,26 @@
         font-size: 60px;
         font-weight: bold;
       }
+      .hvacState {
+        width: 40px;
+        height: 40px;
+        margin: 5px;
+        float: left;
+        border: 1px solid white;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .heatOn {
+        background-color: pink;
+      }
+      .coolOn {
+        background-color: lightblue;
+      }
+      .fanOn {
+        background-color: #aaa;
+      }
       .heat {
         color: red;
       }
@@ -100,7 +120,12 @@
     </div>
 
     <div id="container" class="hidden">
-      <div style="height: 0"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+      <div style="height: 0">
+        <div id="coolOn" class="hvacState">Cool</div>
+        <div id="heatOn" class="hvacState">Heat</div>
+        <div id="fanOn" class="hvacState">Fan</div>
+        <img id="spinner" class="hidden" src="/img/spinner.gif">
+      </div>
 
       <div id="details">
         <div class="temp item" id="currentTemp"></div>

@@ -379,6 +379,7 @@ ecobee.ThermostatsOptions = function(thermostat_ids) {
   this.selection = {
     selectionType: 'thermostats',
     selectionMatch: thermostat_ids,
+    includeEquipmentStatus: true,
     includeEvents: true,
     includeProgram: true,
     includeSettings: true,

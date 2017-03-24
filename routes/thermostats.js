@@ -136,11 +136,12 @@ function serveViewJson(req, res, thermostatList) {
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
     desiredFanMode: thermostat.runtime.desiredFanMode,
-    override: thermostat.events.length > 1 ? thermostat.events[0] : null,
+    overrideTime: thermostat.events.length > 1 ? thermostat.events[0]['endTime'] : null,
     mode: thermostat.settings.hvacMode,
     name: thermostat.name,
     sensors: sensors.sort(sortByName),
     thermostatId: thermostat.identifier,
+    equipmentStatus: thermostat.equipmentStatus,
   });
 }
 

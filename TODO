@@ -1,6 +1,5 @@
 v1
 -Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
--Show whether heat/cool are on
 
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
