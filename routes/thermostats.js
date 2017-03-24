@@ -2,26 +2,6 @@ var api = require('../ecobee-api');
 var config = require('../config');
 var tokenStore = require('../tokens');
 
-function getThermostatArray(req, res, accessToken, callback) {
-  var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
-  api.calls.thermostatSummary(accessToken, thermostatSummaryOptions, function(err, summary) {
-    if (err) {
-      console.log("Couldn't get thermostat summary:", err, summary);
-      callback(err);
-    } else {
-      console.log('thermostatSummary:', summary)
-
-      var thermostatArray = [];
-      for( var i = 0; i < summary.revisionList.length; i ++) {
-        var revisionArray = summary.revisionList[i].split(':');
-        thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
-      }
-
-      callback(null, thermostatArray);
-    }
-  });
-}
-
 function serveJsonLoginRedirect(res, msg) {
   res.json({
     "error": msg,
@@ -36,10 +16,17 @@ exports.listJson = function(req, res) {
       return;
     }
 
-    getThermostatArray(req, res, tokens.access_token, function(err, thermostatArray) {
+    var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
+    api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions, function(err, summary) {
       if (err) {
-        serveJsonLoginRedirect(res, "Couldn't refresh token.");
+        serveJsonLoginRedirect(res, "Couldn't get thermostat summary.");
         return;
+      }
+
+      var thermostatArray = [];
+      for( var i = 0; i < summary.revisionList.length; i ++) {
+        var revisionArray = summary.revisionList[i].split(':');
+        thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
       }
 
       res.json({thermostats: thermostatArray});
@@ -47,66 +34,39 @@ exports.listJson = function(req, res) {
   });
 };
 
-exports.list = function(req, res){
-  tokenStore.get((tokens) => {
-    if (!tokens) {
-      res.redirect('/login?next=' + req.originalUrl);
-    } else {
-      getThermostatArray(req, res, tokens.access_token, function(err, thermostatArray) {
-        if (err) {
-          res.redirect('/login?next=' + req.originalUrl);
-          return;
-        }
-
-        res.render('thermostats/index', {thermostats: thermostatArray});
-      });
-    }
-  });
-};
-
 function temperatureAsInt(temp) {
   return parseInt(temp, 10) * 10; // our canonical form is F * 10
 }
 
-exports.hold = function(req, res) {
+function updateThermostats(req, res, updateFunction) {
   tokenStore.get((tokens) => {
     var thermostatId = req.params.id;
-    var desiredCool = temperatureAsInt(req.param('desiredCool'));
-    var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
-    var fan = req.param('desiredFanMode');
-    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId)
-    // cool_hold_temp, heat_hold_temp, hold_type, hold_hours
-    // hold_type values: dateTime, nextTransition, indefinite, holdHours.
-    // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
-    var functions_array = [new api.SetHoldFunction(desiredCool, desiredHeat, fan, 'nextTransition', null)];
+    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId);
+    var functions_array = [updateFunction];
 
-    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(error) {
-      var url = error ? '/login?next=' + req.originalUrl : '/thermostats/' + thermostatId;
-      res.redirect(url);
+    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, (err, val) => {
+      if (err)
+        serveJsonLoginRedirect(res, "Couldn't update thermostats.");
+      else
+        res.json(val);
     });
   });
 }
 
+exports.hold = function(req, res) {
+  var desiredCool = temperatureAsInt(req.param('desiredCool'));
+  var desiredHeat = temperatureAsInt(req.param('desiredHeat'));
+  var fan = req.param('desiredFanMode');
+  // cool_hold_temp, heat_hold_temp, hold_type, hold_hours
+  // hold_type values: dateTime, nextTransition, indefinite, holdHours.
+  // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
+  var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, 'nextTransition', null);
+  updateThermostats(req, res, updateFunction);
+}
+
 exports.resume = function(req, res) {
-  tokenStore.get((tokens) => {
-    var thermostatId = req.params.id;
-    var thermostats_update_options = new api.ThermostatsUpdateOptions(thermostatId);
-    var resume_program_function = new api.ResumeProgramFunction();
-
-    var functions_array = [];
-    functions_array.push(resume_program_function);
-
-    api.calls.updateThermostats(tokens.access_token, thermostats_update_options, functions_array, null, function(err) {
-      if (err) {
-        res.redirect('/login?next=' + req.originalUrl);
-      } else {
-        // TODO(ojan): WTF with this setTimeout.
-        setTimeout(function() {
-          res.redirect('/thermostats/' + thermostatId);
-        }, 5000);
-      }
-    });
-  });
+  var updateFunction = new api.ResumeProgramFunction();
+  updateThermostats(req, res, updateFunction);
 }
 
 function sortByName(a, b) {
