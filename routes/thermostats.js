@@ -32,13 +32,13 @@ function serveJsonLoginRedirect(res, msg) {
 exports.listJson = function(req, res) {
   tokenStore.get((tokens) => {
     if (!tokens) {
-      serveJsonLoginRedirect("No auth tokens");
+      serveJsonLoginRedirect(res, "No auth tokens");
       return;
     }
 
     getThermostatArray(req, res, tokens.access_token, function(err, thermostatArray) {
       if (err) {
-        serveJsonLoginRedirect("Couldn't refresh token.");
+        serveJsonLoginRedirect(res, "Couldn't refresh token.");
         return;
       }
 
@@ -147,7 +147,7 @@ function serveViewJson(req, res, thermostatList) {
 exports.json = (req, res) => {
   tokenStore.get((tokens) => {
     if (!tokens) {
-      serveJsonLoginRedirect("No auth tokens");
+      serveJsonLoginRedirect(res, "No auth tokens");
       return;
     }
 
@@ -156,7 +156,7 @@ exports.json = (req, res) => {
 
     api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
       if (err) {
-        serveJsonLoginRedirect("Couldn't refresh token.");
+        serveJsonLoginRedirect(res, "Couldn't refresh token.");
         return;
       }
       serveViewJson(req, res, thermostats.thermostatList);
