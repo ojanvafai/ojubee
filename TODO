@@ -1,5 +1,4 @@
 v1
--Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
 -Have a selector for what action to take (2hr, 4hr, hold, next schedule)
 
 v2

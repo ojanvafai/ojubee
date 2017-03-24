@@ -34,6 +34,15 @@ exports.listJson = function(req, res) {
   });
 };
 
+exports.list = function(req, res){
+  tokenStore.get((tokens) => {
+    if (!tokens)
+      res.redirect('/login?next=' + req.originalUrl);
+    else
+      res.render('thermostats/index');
+  });
+};
+
 function temperatureAsInt(temp) {
   return parseInt(temp, 10) * 10; // our canonical form is F * 10
 }

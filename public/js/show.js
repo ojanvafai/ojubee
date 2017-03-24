@@ -158,7 +158,12 @@ function updateTemp() {
   g_pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
 
   roundTempValues(g_state);
-  g_pendingRequest.send(`${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}`);
+
+  var data = '';
+  ['desiredHeat', 'desiredCool', 'desiredFanMode'].forEach((id) => {
+    data += encodedValue(id);
+  })
+  g_pendingRequest.send(data);
 }
 
 var g_updateTimer;

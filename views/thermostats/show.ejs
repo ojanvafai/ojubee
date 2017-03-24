@@ -58,11 +58,6 @@
       #currentTemp {
         font-size: 40px;
       }
-      #state {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
       #sensors > div {
         padding: 3px;
       }
@@ -133,6 +128,15 @@
           <div class="item" id="sensors"></div>
           <div class="item" id="state">
             <div>Mode: <span id="mode"></span></div>
+            <div>
+              Duration:
+              <select id="duration">
+                <option value="2">2 hours</option>
+                <option value="4">4 hours</option>
+                <option selected value="nextTransition">Next transition</option>
+                <option value="indefinite">Indefinite</option>
+              </select>
+            </div>
             <div id="override"></div>
           </div>
         </div>
