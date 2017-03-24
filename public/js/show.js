@@ -20,6 +20,9 @@ function applyState() {
 
   var fan = document.getElementById('fan');
   fan.setAttribute('state', g_state.desiredFanMode);
+
+  var override = document.getElementById('override');
+  override.textContent = g_state.override ? `Override until ${g_state.override.endTime}` : '';
 }
 
 function updateState() {

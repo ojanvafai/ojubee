@@ -1,7 +1,6 @@
 v1
 -Remove the artificial setTimeout from Resume Schedule and instead verify that it was actually resumed.
--Show schedule overrides
--Use fetch everywhere instead of xhr
+-Show whether heat/cool are on
 
 v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
@@ -11,6 +10,7 @@ v2
 -Allow changing mode
 
 v3
+-Use fetch everywhere instead of xhr
 -Make into SPA so page transitions can be less jarring.
 -Change ojubee page to load state via JSON so it's not incorrectly cached indefinitely
 if the thermostat list changes.

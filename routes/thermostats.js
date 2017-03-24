@@ -136,7 +136,7 @@ function serveViewJson(req, res, thermostatList) {
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
     desiredFanMode: thermostat.runtime.desiredFanMode,
-    isHold: thermostat.events.length > 0,
+    override: thermostat.events.length > 1 ? thermostat.events[0] : null,
     mode: thermostat.settings.hvacMode,
     name: thermostat.name,
     sensors: sensors.sort(sortByName),

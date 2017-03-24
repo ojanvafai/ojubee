@@ -1,4 +1,5 @@
 var g_thermostats;
+var g_pageSpecificNavCallback;
 
 fetch('/thermostats/json')
   .then((response) => {
@@ -23,7 +24,6 @@ function appendLink(container, href, text) {
   var a = document.createElement('a');
   a.href = href;
   a.textContent = text;
-  console.log(a.href, window.location.pathname);
   if (a.pathname == window.location.pathname)
     a.className = 'current';
   container.appendChild(a);

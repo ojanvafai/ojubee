@@ -58,6 +58,11 @@
       #currentTemp {
         font-size: 40px;
       }
+      #state {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
       #sensors > div {
         padding: 3px;
       }
@@ -101,8 +106,9 @@
         <div class="temp item" id="currentTemp"></div>
         <div class="split-container">
           <div class="item" id="sensors"></div>
-          <div class="item" id="override">
+          <div class="item" id="state">
             <div>Mode: <span id="mode"></span></div>
+            <div id="override"></div>
           </div>
         </div>
       </div>
