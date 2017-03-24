@@ -1,5 +1,6 @@
--Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
 -Get rid of XMLHttpRequest copy-pasta
+-Figure out why add to homescreen banner isn't prompting
+-Remove memcache support
 
 -Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.

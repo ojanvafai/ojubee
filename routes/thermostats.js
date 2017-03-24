@@ -96,6 +96,10 @@ function sortByName(a, b) {
   return 0;
 }
 
+function divide10(num) {
+  return num / 10;
+}
+
 function serveViewJson(req, res, thermostatList) {
   var thermostat = thermostatList[0];
 
@@ -136,10 +140,24 @@ function serveViewJson(req, res, thermostatList) {
     }
   }
 
+  var allowedHeatRange = thermostat.runtime.desiredHeatRange.map(divide10);
+  var allowedCoolRange = thermostat.runtime.desiredCoolRange.map(divide10);
+
+  // Ensure allowed ranges keep a distance of 5 since the thermostat
+  // does that on it's own and gives weird errors if you try to do
+  // differences less than 5.
+  if (allowedHeatRange[0] + 5 > allowedCoolRange[0])
+    allowedCoolRange[0] = allowedHeatRange[0] + 5;
+
+  if (allowedCoolRange[1] - 5 < allowedHeatRange[1])
+    allowedHeatRange[1] = allowedCoolRange[1] - 5;
+
   res.json({
     currentTemp: thermostat.runtime.actualTemperature / 10,
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
+    allowedHeatRange: allowedHeatRange,
+    allowedCoolRange: allowedCoolRange,
     desiredFanMode: thermostat.runtime.desiredFanMode,
     overrideTime: overrideTime,
     mode: thermostat.settings.hvacMode,

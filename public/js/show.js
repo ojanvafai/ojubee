@@ -134,6 +134,15 @@ function modifyTemp(id, delta) {
       g_state.desiredHeat = g_state.desiredCool - 5;
   }
 
+  if (g_state.desiredCool < g_state.allowedCoolRange[0])
+    g_state.desiredCool = g_state.allowedCoolRange[0];
+  if (g_state.desiredHeat < g_state.allowedHeatRange[0])
+    g_state.desiredHeat = g_state.allowedHeatRange[0];
+  if (g_state.desiredCool > g_state.allowedCoolRange[1])
+    g_state.desiredCool = g_state.allowedCoolRange[1];
+  if (g_state.desiredHeat > g_state.allowedHeatRange[1])
+    g_state.desiredHeat = g_state.allowedHeatRange[1];
+
   applyState();
   updateTemp();
 }
