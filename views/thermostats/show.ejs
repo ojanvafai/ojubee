@@ -20,7 +20,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        overflow: auto;
       }
       #details > .split-container {
         font-size: 20px;
@@ -37,7 +37,6 @@
       #spinner {
         opacity: 1;
         margin: 10px;
-        float: right;
         transition: opacity 0.5s;
       }
       .split-container {
@@ -55,10 +54,19 @@
         font-size: 60px;
         background: white;
       }
+      #top-toolbar {
+        display: flex;
+      }
+      #top-toolbar > * {
+        flex: 1;
+      }
       #currentTemp {
         font-size: 40px;
+        display: flex;
+        justify-content: center;
       }
-      #sensors > div {
+      #sensors > *,
+      #state > * {
         padding: 3px;
       }
       #fan[state=on] {
@@ -84,7 +92,6 @@
         width: 40px;
         height: 40px;
         margin: 5px;
-        float: left;
         border: 1px solid white;
 
         display: flex;
@@ -115,15 +122,17 @@
     </div>
 
     <div id="container" class="hidden">
-      <div style="height: 0">
-        <div id="coolOn" class="hvacState">Cool</div>
-        <div id="heatOn" class="hvacState">Heat</div>
-        <div id="fanOn" class="hvacState">Fan</div>
-        <img id="spinner" class="hidden" src="/img/spinner.gif">
+      <div id="top-toolbar">
+        <div style="display: flex">
+          <div id="coolOn" class="hvacState">Cool</div>
+          <div id="heatOn" class="hvacState">Heat</div>
+          <div id="fanOn" class="hvacState">Fan</div>
+        </div>
+        <div id="currentTemp"></div>
+        <div style="text-align: right"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
       </div>
 
       <div id="details">
-        <div class="temp item" id="currentTemp"></div>
         <div class="split-container">
           <div class="item" id="sensors"></div>
           <div class="item" id="state">
