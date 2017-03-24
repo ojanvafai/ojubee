@@ -44,6 +44,9 @@
         margin: 10px;
         transition: opacity 0.5s;
       }
+      #override {
+        font-size: 20px;
+      }
       .split-container {
         display: flex;
         position: relative;
@@ -83,15 +86,21 @@
         right: 0;
         bottom: 0;
         left: 0;
-        opacity: 0.5;
         pointer-events: none;
-      }
-      .temp {
+
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+      .center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .temp {
         font-size: 60px;
         font-weight: bold;
+        opacity: 0.5;
       }
       .hvacState {
         width: 40px;
@@ -143,7 +152,7 @@
           <div class="item" id="state">
             <div>Mode: <span id="mode"></span></div>
             <div>
-              Duration:
+              Hold:
               <select id="duration">
                 <option value="2">2 hours</option>
                 <option value="4">4 hours</option>
@@ -151,13 +160,15 @@
                 <option value="indefinite">Indefinite</option>
               </select>
             </div>
-            <div id="override"></div>
           </div>
         </div>
       </div>
 
       <div class="split-container">
-        <div class="button item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</div>
+        <div id="resume" class="button item center" onclick="resumeSchedule()">
+          <div style="font-size: 30px">Resume</div>
+          <div id="override"></div>
+        </div>
         <div id="fan" class="button item" onclick="toggleFan()">Fan</div>
       </div>
 

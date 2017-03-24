@@ -1,11 +1,4 @@
-v2
 -Limit desired temp values to the Runtime.desiredCoolRange/Runtime.desiredHeatRange range.
--If the last update time is not recent, put it on the page somewhere.
--Periodically have server sync thermostat data so it's always up to date and push changes using ServiceWorker + budget API.
 -Allow changing mode
-
-v3
--Use fetch everywhere instead of xhr
+-Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.
--Change ojubee page to load state via JSON so it's not incorrectly cached indefinitely
-if the thermostat list changes.

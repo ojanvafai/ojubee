@@ -30,7 +30,13 @@ function applyState() {
   fan.setAttribute('state', g_state.desiredFanMode);
 
   var override = document.getElementById('override');
-  override.textContent = g_state.overrideTime ? `Override until ${g_state.overrideTime}` : '';
+  override.textContent = g_state.overrideTime ? `Held until ${g_state.overrideTime}` : '';
+
+  var resume = document.getElementById('resume');
+  if (g_state.overrideTime)
+    resume.classList.remove('hidden');
+  else
+    resume.classList.add('hidden');
 
   applyOnState('heat', 'auxHeat');
   applyOnState('cool', 'compCool');
