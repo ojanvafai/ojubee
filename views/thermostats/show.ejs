@@ -7,6 +7,10 @@
     <script src="/js/thermostats.js"></script>
     <script src="/js/show.js"></script>
     <style>
+      * {
+        flex-wrap: wrap;
+        min-width: min-content;
+      }
       #container {
         display: flex;
         flex-direction: column;
@@ -27,6 +31,7 @@
       }
       img {
         width: 50px;
+        min-width: 0px;
       }
       #load-spinner {
         display: flex;
@@ -46,13 +51,13 @@
       .split-container > .item {
         flex: 1;
         margin: 5px;
-        min-width: 0;
       }
-      .split-container button {
+      .split-container .button {
         border: 1px solid;
         padding: 20px 0;
         font-size: 60px;
         background: white;
+        text-align: center;
       }
       #top-toolbar {
         display: flex;
@@ -123,7 +128,7 @@
 
     <div id="container" class="hidden">
       <div id="top-toolbar">
-        <div style="display: flex">
+        <div style="display: flex; flex-wrap: nowrap;">
           <div id="coolOn" class="hvacState">Cool</div>
           <div id="heatOn" class="hvacState">Heat</div>
           <div id="fanOn" class="hvacState">Fan</div>
@@ -152,20 +157,20 @@
       </div>
 
       <div class="split-container">
-        <button class="item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</button>
-        <button id="fan" class="item" onclick="toggleFan()">Fan</button>
+        <div class="button item" onclick="resumeSchedule()" style="font-size: 30px">Resume Schedule</div>
+        <div id="fan" class="button item" onclick="toggleFan()">Fan</div>
       </div>
 
       <div class="split-container">
         <div class="cool temp fill" id="desiredCool"></div>
-        <button class="item" onclick="modifyTemp('desiredCool', -1)">-</button>
-        <button class="item" onclick="modifyTemp('desiredCool', 1)">+</button>
+        <div class="button item" onclick="modifyTemp('desiredCool', -1)">-</div>
+        <div class="button item" onclick="modifyTemp('desiredCool', 1)">+</div>
       </div>
 
       <div class="split-container">
         <div class="heat temp fill" id="desiredHeat"></div>
-        <button class="item" onclick="modifyTemp('desiredHeat', -1)">-</button>
-        <button class="item" onclick="modifyTemp('desiredHeat', 1)">+</button>
+        <div class="button item" onclick="modifyTemp('desiredHeat', -1)">-</div>
+        <div class="button item" onclick="modifyTemp('desiredHeat', 1)">+</div>
       </div>
 
       <div id="nav"></div>
