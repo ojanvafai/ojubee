@@ -4,6 +4,7 @@ var thermostats = require('./routes/thermostats');
 var http = require('http');
 var path = require('path');
 var favicon = require('serve-favicon');
+const yes = require('yes-https');
 
 var app = express();
 
@@ -15,15 +16,8 @@ app.configure(function(){
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
-  app.use(function(req, res, next){
-    if (req.host != 'localhost' && req.protocol == 'http') {
-      res.status(200).send(req.protocol);
-      // res.redirect(`https://${req.host}${req.url}`);
-      return;
-    }
-
-    app.router(req, res, next);
-  });
+  app.use(yes());
+  app.use(app.router);
   app.use(express.static(path.join(__dirname, 'public')));
 });
 
