@@ -16,6 +16,14 @@ app.configure(function(){
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
+
+  app.use((req, res, next) => {
+    if (req.get('X-Appengine-Cron') === "true")
+      app.router(req, res, next);
+    else
+      next();
+  });
+
   app.use(yes());
   app.use(app.router);
   app.use(express.static(path.join(__dirname, 'public')));
