@@ -1,9 +1,7 @@
 var g_thermostatId = location.pathname.replace("/thermostats/", "");
 var g_state;
-var g_pendingRequest;
-var g_pendingUpdateState;
 var g_tempsModified = false;
-var g_pendingRequests = {};
+var g_pendingRequests = new Map();
 
 function applyOnState(idPrefix, keyword) {
   var id = idPrefix + 'On';
@@ -56,25 +54,32 @@ function applyState() {
 function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
   showSpinner();
 
-  if (g_pendingRequests[requestKey])
-    g_pendingRequests[requestKey].abort();
+  var pending = g_pendingRequests.get(requestKey);
+  if (pending)
+    pending.abort();
 
   var xhr = new XMLHttpRequest();
   xhr.open(opt_postData !== undefined ? "POST" : "GET", url);
 
-  xhr.addEventListener('load', onLoad);
-  xhr.addEventListener('error', onError);
   xhr.responseType = 'json';
   xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
 
+  xhr.addEventListener('load', () => {
+    g_pendingRequests.delete(requestKey);
+    onLoad(xhr.response);
+  });
+
+  xhr.addEventListener('error', () => {
+    g_pendingRequests.delete(requestKey);
+    onError();
+  });
+
   xhr.send(opt_postData);
 
-  g_pendingRequests[requestKey] = xhr;
+  g_pendingRequests.set(requestKey, xhr);
 }
 
-function updateStateLoad() {
-  var newState = this.response;
-
+function updateStateLoad(newState) {
   if (newState.error) {
     window.location = newState.redirectUrl + window.location.pathname;
     return;
@@ -177,7 +182,8 @@ function showSpinner() {
 }
 
 function hideSpinner() {
-  spinner.classList.add('hidden');
+  if (!g_pendingRequests.size)
+    spinner.classList.add('hidden');
 }
 
 function updateTemp() {

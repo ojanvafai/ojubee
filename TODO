@@ -1,5 +1,4 @@
 -Figure out why add to homescreen banner isn't prompting
--Fix hiding spinner wheren there are multiple xhr's in progress.
 
 -Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.
