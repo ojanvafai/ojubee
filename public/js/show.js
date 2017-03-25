@@ -3,6 +3,7 @@ var g_state;
 var g_pendingRequest;
 var g_pendingUpdateState;
 var g_tempsModified = false;
+var g_pendingRequests = {};
 
 function applyOnState(idPrefix, keyword) {
   var id = idPrefix + 'On';
@@ -51,58 +52,73 @@ function applyState() {
   applyOnState('fan', 'fan');
 }
 
+// TODO: Use fetch once it supports cancellation.
+function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
+  showSpinner();
+
+  if (g_pendingRequests[requestKey])
+    g_pendingRequests[requestKey].abort();
+
+  var xhr = new XMLHttpRequest();
+  xhr.open(opt_postData !== undefined ? "POST" : "GET", url);
+
+  xhr.addEventListener('load', onLoad);
+  xhr.addEventListener('error', onError);
+  xhr.responseType = 'json';
+  xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
+
+  xhr.send(opt_postData);
+
+  g_pendingRequests[requestKey] = xhr;
+}
+
+function updateStateLoad() {
+  var newState = this.response;
+
+  if (newState.error) {
+    window.location = newState.redirectUrl + window.location.pathname;
+    return;
+  }
+
+  // Check if desiredCool/heat don't match early return and
+  // issue another updateTemp request and loop through till it takes.
+  if (g_tempsModified && g_state &&
+      (newState.desiredHeat != g_state.desiredHeat ||
+       newState.desiredCool != g_state.desiredCool)) {
+    console.log("Numbers didn't take. Retrying.",
+      newState.desiredHeat, g_state.desiredHeat,
+      newState.desiredCool, g_state.desiredCool);
+    setTimeout(updateTemp, 1000);
+    return;
+  }
+
+  g_tempsModified = false;
+  hideSpinner();
+  g_state = newState;
+  applyState();
+}
+
 function updateState() {
-  if (g_state)
-    showSpinner();
-
-  if (g_pendingUpdateState)
-    g_pendingUpdateState.abort();
-
-  g_pendingUpdateState = new XMLHttpRequest();
-  g_pendingUpdateState.responseType = 'json';
-
-  g_pendingUpdateState.addEventListener('load', () =>{
-    var newState = g_pendingUpdateState.response;
-
-    if (newState.error) {
-      window.location = newState.redirectUrl + window.location.pathname;
-      return;
-    }
-
-    // Check if desiredCool/heat don't match early return and
-    // issue another updateTemp request and loop through till it takes.
-    if (g_tempsModified && g_state &&
-        (newState.desiredHeat != g_state.desiredHeat ||
-         newState.desiredCool != g_state.desiredCool)) {
-      console.log("Numbers didn't take. Retrying.",
-        newState.desiredHeat, g_state.desiredHeat,
-        newState.desiredCool, g_state.desiredCool);
-      setTimeout(updateTemp, 1000);
-      return;
-    }
-
-    g_tempsModified = false;
-    hideSpinner();
-    g_state = newState;
-    applyState();
-  });
-
-  g_pendingUpdateState.addEventListener('error', () =>{});
-  g_pendingUpdateState.open("GET", `/thermostats/${g_thermostatId}/json`);
-  g_pendingUpdateState.send();
+  var onError = () => {
+    console.log('updateState failed.');
+  };
+  fetchJson('updateState',
+    `/thermostats/${g_thermostatId}/json`,
+    updateStateLoad,
+    onError);
 }
 
 function resumeSchedule() {
-  showSpinner();
-
-  var xhr = new XMLHttpRequest();
-  xhr.addEventListener('load', updateState);
-  xhr.addEventListener('error', () => {
+  var onError = () => {
     updateState();
     alert('Resume schedule failed. Reload the page to be safe.');
-  });
-  xhr.open("POST", `/thermostats/${g_thermostatId}/resume`);
-  xhr.send();
+  };
+  var postData = "";
+  fetchJson('resumeSchedule',
+    `/thermostats/${g_thermostatId}/resume`,
+    updateState,
+    onError,
+    postData);
 }
 
 function encodedValue(id) {
@@ -165,48 +181,37 @@ function hideSpinner() {
 }
 
 function updateTemp() {
-  if (g_pendingRequest)
-    g_pendingRequest.abort();
-
-  showSpinner();
-
-  g_pendingRequest = new XMLHttpRequest();
-  g_pendingRequest.addEventListener('load', updateState);
-  g_pendingRequest.addEventListener('error', () => {
+  var onError = () => {
     updateState();
     alert('Update failed. Reload the page to be safe.');
-  });
-
-  g_pendingRequest.open("POST", `/thermostats/${g_thermostatId}/sethold`);
-  g_pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
+  };
 
   roundTempValues(g_state);
+  var postData = "";
+  var postData = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
+  postData += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
 
-  var data = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
-  data += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
-  g_pendingRequest.send(data);
+  fetchJson('updateTemp',
+    `/thermostats/${g_thermostatId}/sethold`,
+    updateState,
+    onError,
+    postData);
 }
 
 function updateMode() {
-  var newMode = document.getElementById('mode').selectedOptions[0].value;
-  console.log(newMode);
-
-  showSpinner();
-
-  g_pendingRequest = new XMLHttpRequest();
-  g_pendingRequest.addEventListener('load', updateState);
-  g_pendingRequest.addEventListener('error', () => {
+  var onError = () => {
     updateState();
     alert('Update failed. Reload the page to be safe.');
-  });
+  };
 
-  g_pendingRequest.open("POST", `/thermostats/${g_thermostatId}/setmode`);
-  g_pendingRequest.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
+  var newMode = document.getElementById('mode').selectedOptions[0].value;
+  var postData = `mode=${encodeURIComponent(newMode)}`;
 
-  roundTempValues(g_state);
-
-  var data = `mode=${encodeURIComponent(newMode)}`;
-  g_pendingRequest.send(data);
+  fetchJson('updateMode',
+    `/thermostats/${g_thermostatId}/setmode`,
+    updateState,
+    onError,
+    postData);
 }
 
 var g_updateTimer;

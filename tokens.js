@@ -72,9 +72,10 @@ exports.get = (callback) => {
       console.log("Couldn't get tokens from memcache. Getting from datastore:", err, val);
       datastore.get(datastoreKey).then(
         (entities) => {
-          console.log("Trying to write datastore value to memcache.");
           var tokens = entities[0];
-          writeToMemcache(tokens);
+          console.log("Trying to write datastore value to memcache:", tokens);
+          if (tokens)
+            writeToMemcache(tokens);
           callback(tokens);
         },
         (err) => {
