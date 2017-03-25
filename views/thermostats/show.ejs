@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#eee">
     <link rel="manifest" href="/manifest.json">
     <link rel='stylesheet' href='/css/base.css' />
+
     <script src="/js/thermostats.js"></script>
     <script src="/js/show.js"></script>
     <style>
@@ -111,7 +113,8 @@
       .temp {
         font-size: 60px;
         font-weight: bold;
-        opacity: 0.5;
+        /* Picked to satisfy lighthouse contrast requirements. */
+        opacity: 0.64;
       }
       .hvacState {
         width: 40px;
@@ -143,7 +146,7 @@
 
   <body>
     <div id="load-spinner">
-      <img src="/img/spinner.gif">
+      <img alt="Loading spinner" src="/img/spinner.gif">
     </div>
 
     <div id="container" class="hidden">
@@ -155,31 +158,30 @@
         </div>
         <div class="item" style="display: flex; justify-content: space-between;">
           <div id="currentTemp"></div>
-          <div style="text-align: right"><img id="spinner" class="hidden" src="/img/spinner.gif"></div>
+          <div style="text-align: right"><img id="spinner" class="hidden" alt="Loading spinner" src="/img/spinner.gif"></div>
         </div>
       </div>
 
       <div id="details">
         <div class="split-container">
           <div class="item" id="state">
-            <div>Mode:
+            <label>Mode:
               <select id="mode" onchange="updateMode()">
                 <option value="heat">Heat</option>
                 <option value="cool">Cool</option>
                 <option value="auto">Auto</option>
                 <option value="off">Off</option>
               </select>
-            </div>
+            </label>
 
-            <div>
-              Hold:
+            <label>Hold:
               <select id="duration">
                 <option value="2">2 hours</option>
                 <option value="4">4 hours</option>
                 <option selected value="nextTransition">Next transition</option>
                 <option value="indefinite">Indefinite</option>
               </select>
-            </div>
+            </label>
           </div>
 
           <div class="item" id="sensors"></div>

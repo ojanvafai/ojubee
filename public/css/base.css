@@ -34,11 +34,11 @@ body {
   white-space: nowrap;
   font-size: 20px;
   text-align: center;
-  color: #eee;
+  color: white;
   text-decoration: none;
 }
 
 #nav > .current {
-  background-color: #eee;
+  background-color: white;
   color: black;
 }
