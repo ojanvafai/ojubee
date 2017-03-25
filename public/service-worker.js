@@ -6,12 +6,13 @@ var enableLogging = false;
 self.addEventListener("install", (event) => {
   if (enableLogging)
     console.log('WORKER: install event in progress.');
+  self.skipWaiting();
 });
 
 function shouldCache(url) {
   // TODO: This is super hacky to cache the home page, e.g. query/hash parameters
   // would break this.
-  if (url == location.origin + "/")
+  if (url == self.location.origin + "/")
     return true;
 
   if (url.match(/^chrome-extension:/))
