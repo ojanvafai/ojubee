@@ -1,6 +1,6 @@
 // Mostly copy-pasted from https://css-tricks.com/serviceworker-for-offline/
 
-var version = 'v2::';
+var version = 'v3::';
 var enableLogging = false;
 
 self.addEventListener("install", (event) => {

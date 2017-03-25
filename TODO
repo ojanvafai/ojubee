@@ -1,5 +1,3 @@
--Make not so ugly on desktop and landscape
-
 -Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.
 -Add ability to change schedule
