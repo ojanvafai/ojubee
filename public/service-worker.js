@@ -1,26 +1,17 @@
 // Mostly copy-pasted from https://css-tricks.com/serviceworker-for-offline/
 
 var version = 'v2::';
-var enableFetchLogging = false;
+var enableLogging = false;
 
 self.addEventListener("install", (event) => {
-  console.log('WORKER: install event in progress.');
-  event.waitUntil(
-    caches
-      .open(version + 'ojubee')
-      .then((cache) => {
-        return cache.addAll([
-          '/',
-        ]);
-      })
-      .then(() => {
-        console.log('WORKER: install completed');
-      })
-  );
+  if (enableLogging)
+    console.log('WORKER: install event in progress.');
 });
 
 function shouldCache(url) {
-  if (url == "/")
+  // TODO: This is super hacky to cache the home page, e.g. query/hash parameters
+  // would break this.
+  if (url == location.origin + "/")
     return true;
 
   if (url.match(/^chrome-extension:/))
@@ -37,13 +28,13 @@ function shouldCache(url) {
 }
 
 self.addEventListener("fetch", (event) => {
-  if (enableFetchLogging)
+  if (enableLogging)
     console.log('WORKER: fetch event in progress.');
 
   var request = event.request;
 
   if (request.method !== 'GET' || request.cache == "no-store" || !shouldCache(request.url)) {
-    if (enableFetchLogging && !request.url.match(/^chrome-extension:/))
+    if (enableLogging && !request.url.match(/^chrome-extension:/))
       console.log('WORKER: fetch event ignored.', request.method, request.url);
     return;
   }
@@ -56,13 +47,13 @@ self.addEventListener("fetch", (event) => {
           .then(fetchedFromNetwork, unableToResolve)
           .catch(unableToResolve);
 
-        if (enableFetchLogging)
+        if (enableLogging)
           console.log('WORKER: fetch event', cached ? '(cached)' : '(network)', request.url);
         return cached || networked;
 
         function fetchedFromNetwork(response) {
           var cacheCopy = response.clone();
-          if (enableFetchLogging)
+          if (enableLogging)
             console.log('WORKER: fetch response from network.', request.url);
 
           caches
@@ -71,7 +62,7 @@ self.addEventListener("fetch", (event) => {
               cache.put(request, cacheCopy);
             })
             .then(() => {
-              if (enableFetchLogging)
+              if (enableLogging)
                 console.log('WORKER: fetch response stored in cache.', request.url);
             });
 
@@ -93,7 +84,8 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  console.log('WORKER: activate event in progress.');
+  if (enableLogging)
+    console.log('WORKER: activate event in progress.');
   event.waitUntil(
     caches
       // This method returns a promise which will resolve to an array of available
@@ -114,7 +106,8 @@ self.addEventListener("activate", (event) => {
         );
       })
       .then(() => {
-        console.log('WORKER: activate completed.');
+        if (enableLogging)
+          console.log('WORKER: activate completed.');
       })
   );
 });

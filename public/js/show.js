@@ -12,9 +12,6 @@ function applyOnState(idPrefix, keyword) {
 }
 
 function applyState() {
-  document.getElementById('container').classList.remove('hidden');
-  document.getElementById('load-spinner').style.display = 'none';
-
   var html = '';
   g_state.sensors.forEach(function(sensor) {
     html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
@@ -97,8 +94,11 @@ function updateStateLoad(newState) {
     return;
   }
 
-  g_tempsModified = false;
   hideSpinner();
+  document.getElementById('container').classList.remove('hidden');
+  document.getElementById('load-spinner').style.display = 'none';
+
+  g_tempsModified = false;
   g_state = newState;
   applyState();
 }
