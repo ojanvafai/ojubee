@@ -1,6 +1,11 @@
 var g_thermostats;
 var g_pageSpecificNavCallback;
 
+window.addEventListener('online', () => { window.location.reload(); });
+window.addEventListener('offline', () => {
+  document.body.classList.add('offline');
+});
+
 window.addEventListener('DOMContentLoaded', () => {
   fetch('/thermostats/json')
     .then((response) => {

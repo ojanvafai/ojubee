@@ -12,6 +12,13 @@
         min-width: min-content;
         white-space: nowrap;
       }
+      .offline #container {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .offline::before {
+        content: "You are offline.";
+      }
       #container {
         display: flex;
         flex-direction: column;
