@@ -99,6 +99,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
       }
       .temp {
         font-size: 60px;
@@ -178,24 +179,26 @@
         </div>
       </div>
 
-      <div class="split-container">
-        <div id="resume" class="button item center" onclick="resumeSchedule()">
-          <div style="font-size: 30px">Resume</div>
-          <div id="override"></div>
+      <div>
+        <div class="split-container">
+          <div id="resume" class="button item center" onclick="resumeSchedule()">
+            <div style="font-size: 30px">Resume</div>
+            <div id="override"></div>
+          </div>
+          <div id="fan" class="button item" onclick="toggleFan()">Fan</div>
         </div>
-        <div id="fan" class="button item" onclick="toggleFan()">Fan</div>
-      </div>
 
-      <div class="split-container">
-        <div class="cool temp fill" id="desiredCool"></div>
-        <div class="button item" onclick="modifyTemp('desiredCool', -1)">-</div>
-        <div class="button item" onclick="modifyTemp('desiredCool', 1)">+</div>
-      </div>
+        <div class="split-container">
+          <div class="cool temp fill" id="desiredCool"></div>
+          <div class="button item" onclick="modifyTemp('desiredCool', -1)">-</div>
+          <div class="button item" onclick="modifyTemp('desiredCool', 1)">+</div>
+        </div>
 
-      <div class="split-container">
-        <div class="heat temp fill" id="desiredHeat"></div>
-        <div class="button item" onclick="modifyTemp('desiredHeat', -1)">-</div>
-        <div class="button item" onclick="modifyTemp('desiredHeat', 1)">+</div>
+        <div class="split-container">
+          <div class="heat temp fill" id="desiredHeat"></div>
+          <div class="button item" onclick="modifyTemp('desiredHeat', -1)">-</div>
+          <div class="button item" onclick="modifyTemp('desiredHeat', 1)">+</div>
+        </div>
       </div>
 
     </div>
