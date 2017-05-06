@@ -37,7 +37,6 @@ app.get('/', thermostats.list);
 
 // check routes/login.js for the implementation details of the login routes
 app.get('/login', login.list);  // login page
-app.get('/login/getpin', login.getpin);  // login page
 app.get('/login/error', login.error); // error page
 app.post('/login', login.create);  // login post handler
 

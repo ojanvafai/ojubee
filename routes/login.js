@@ -4,6 +4,28 @@ var tokenStore = require('../tokens');
 
 const REFRESH_TRY_COUNT = 2;
 
+function renderGetPin(req, res) {
+  var scope = 'smartWrite';
+  var appKey = config.appKey;
+
+  api.calls.getPin(appKey, scope, function(err, pinResults) {
+    if (err) {
+      res.redirect('/login/error');
+    } else {
+      tokenStore.delete(() => {
+        console.log(pinResults);
+        res.render('login/getpin', {
+          pin: pinResults.ecobeePin,
+          code: pinResults.code,
+          interval: pinResults.interval,
+          isError: false,
+          tooFast: false
+        });
+      });
+    }
+  });
+}
+
 exports.list = function(req, res){
   // No next param means this is just for the cron, so serve response
   // instead of redirecting.
@@ -13,7 +35,7 @@ exports.list = function(req, res){
   function refreshFailed(msg) {
     console.log(msg);
     if (next)
-      res.redirect('/login/getpin' + nextParams);
+      renderGetPin(req, res);
     else
       res.status(500).send(msg);
   }
@@ -92,26 +114,4 @@ exports.create = function(req, res) {
 
 exports.error = function(req, res) {
   res.render('login/error');
-};
-
-exports.getpin = function(req, res) {
-  var scope = 'smartWrite';
-  var client_id = config.appKey;
-
-  api.calls.getPin(client_id, scope, function(err, pinResults) {
-    if (err) {
-      res.redirect('/login/error');
-    } else {
-      tokenStore.delete(() => {
-        console.log(pinResults);
-        res.render('login/getpin', {
-          pin: pinResults.ecobeePin,
-          code: pinResults.code,
-          interval: pinResults.interval,
-          isError: false,
-          tooFast: false
-        });
-      });
-    }
-  });
 };

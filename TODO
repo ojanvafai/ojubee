@@ -1,3 +1,9 @@
+-If last update is >1 minute ago, show the spinner as an overlay
+-Require auth
+-Style select elements to not be quite so ugly
+-make refresh grey out instead of disappearring it
+-make UI better on shorter screens
+
 -Use fetch everywhere instead of xhr. Blocked on being able to abort fetches.
 -Make into SPA so page transitions can be less jarring.
 -Add ability to change schedule
