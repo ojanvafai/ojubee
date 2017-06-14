@@ -34,3 +34,5 @@ The implementation for the thermostat related endpoints can be found in /routes/
 Views that get loaded by the various endpoints can likewise be found in /views/
 
 Logic that speaks directly to the ecobee servers is all encapsulated in the ecobee-api.js file. This is an implementation of the api itself. For more API documentation please see http://ecobee.com/home/developer/api/documentation/v1/index.shtml
+
+TEST
