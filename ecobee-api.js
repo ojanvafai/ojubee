@@ -1,7 +1,21 @@
-var http = require('http');
-var https = require('https');
-var querystring = require('querystring');
-var config = require('./config');
+var querystring = {
+  stringify: (obj) => {
+    var out = [];
+    for (let entry of Object.entries(obj)) {
+      out.push(encodeURIComponent(entry[0]) + '=' + encodeURIComponent(entry[1]));
+    }
+    return out.join('&');
+  }
+};
+
+var config = {};
+config.appKey = 'WWiotjboBZKj9Bhf5KoZkxVwG5jZ8bau';
+config.ecobeeHost = 'www.ecobee.com';
+config.ecobeePort = '443';
+config.isHTTPS = true;
+config.scope = 'smartWrite';
+config.GCLOUD_PROJECT = "oju-bee";
+
 var ecobee = ecobee || {};
 
 var inMemoryCache = {};
@@ -13,75 +27,27 @@ var api = {
   /**
    * Generic request code for node handles get and post requests currently
    */
-  makeRequest: function(options, dataString, isHTTPS, callback) {
-    var reqCallback = function(res) {
-      var reqData = '';
-      res.setEncoding('utf8');
-
-      res.on('data', function (chunk) {
-        reqData += chunk;
-      });
-
-      req.on('error', function(e) {
-        callback(e);
-      });
-
-      res.on('end', function() {
-        var returnData = null;
-
-        // are we expecting json back?
-        if(options.headers && options.headers.Accept && options.headers.Accept === 'application/json') {
-
-          // try to parse the json, could error if we don't get json back from the server
-          try {
-            returnData = JSON.parse(reqData);
-          } catch(e) {
-            returnData = reqData;
-          }
-          console.log(returnData)
-        } else {
-          returnData = reqData;
-        }
-        console.log(res.statusCode)
-        if(res.statusCode !== 200) {
-          var error = new Error(res.statusCode);
-          error.data = returnData;
-          callback(error);
-        } else {
-          callback(null, returnData);
-        }
-      });
+  makeRequest: function(options, dataString, callback) {
+    let params = {
+      url: `https://${options.host}${options.path}`
     };
 
-    var req = null;
+    if (options.method == 'GET')
+      params.url += '?' + dataString;
+    else
+      params.data = dataString;
 
-    options.headers['User-Agent'] =  'demo-api-app';
-    if(!options.method || options.method.toLowerCase() === 'get') {
-      options.path += '?' + dataString;
-      console.log(options.path)
-    } else {
-      options.headers['Content-Length'] =  dataString.length;
-    }
+    var url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
+      querystring.stringify(params);
 
-    if(isHTTPS) {
-      req = https.request(options, reqCallback);
-    } else {
-      req = http.request(options, reqCallback);
-    }
-
-    if(options.method && options.method.toLowerCase() === 'post') {
-      console.log('posting data:' + dataString);
-      console.log(options.path)
-      req.write(dataString);
-    }
-
-    // attach listeners for error event to the request
-    req.on('error', function(e) {
-      console.log('error!!!')
-      callback(e);
+    fetch(url).then(function(response) {
+      var contentType = response.headers.get("content-type");
+      if(contentType && contentType.includes("application/json"))
+        return response.json();
+      return response.text();
+    }).then(function(response) {
+      callback(null, response);
     });
-
-    req.end();
   },
   /**
    * get a new pin for an application. The Client id is the api key assigned to the
@@ -104,7 +70,7 @@ var api = {
       client_id: client_id
     };
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
   },
   /**
    * Attempt to register a pin once the app has been added on the
@@ -129,7 +95,7 @@ var api = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
   },
   /**
    * Register Call to obtain a token from user credentials
@@ -159,7 +125,7 @@ var api = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
 
   },
   /**
@@ -184,7 +150,7 @@ var api = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
   },
   /**
    * get the summary for the thermostats associated wtih an account
@@ -230,7 +196,7 @@ var api = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, wrappedCallback);
+    this.makeRequest(options, dataString, wrappedCallback);
   },
   /**
    * get all alerts for a given account. This has not been ported over to node yet
@@ -303,7 +269,7 @@ var api = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
   },
   /**
    * updates thermostats based on the ThermostatsUpdateOptions object
@@ -326,7 +292,7 @@ var api = {
       }
     };
 
-    this.makeRequest(options, dataString, config.isHTTPS, callback);
+    this.makeRequest(options, dataString, callback);
   }
 };
 
@@ -565,21 +531,3 @@ ecobee.ScheduleObject = function(scheduleArray) {
     }
   };
 };
-
-exports.ScheduleObject = ecobee.ScheduleObject;
-exports.ProgramObject = ecobee.ProgramObject;
-exports.ClimateObject = ecobee.ClimateObject;
-exports.ManagementSet = ecobee.ManagementSet;
-exports.SetHoldFunction = ecobee.SetHoldFunction;
-exports.SetOccupiedFunction = ecobee.SetOccupiedFunction;
-exports.AcknowledgeFunction = ecobee.AcknowledgeFunction;
-exports.SendMessageFunction = ecobee.SendMessageFunction;
-exports.ResumeProgramFunction = ecobee.ResumeProgramFunction;
-exports.ThermostatsOptions = ecobee.ThermostatsOptions;
-exports.ThermostatSummaryOptions = ecobee.ThermostatSummaryOptions;
-exports.BreadCrumbOptions = ecobee.BreadCrumbOptions;
-exports.ModeUpdateSettings = ecobee.ModeUpdateSettings;
-exports.ThermostatsUpdateOptions = ecobee.ThermostatsUpdateOptions;
-exports.AlertsOptions = ecobee.AlertsOptions;
-exports.RegisterOptions = ecobee.RegisterOptions;
-exports.calls = api;

@@ -38,11 +38,14 @@ exports.save = (tokens) => {
 }
 
 exports.get = (callback) => {
+  console.log("XXXXXXXXXX: get");
   datastore.get(datastoreKey).then(
     (entities) => {
+      console.log("XXXXXXXXXX: success");
       callback(entities[0]);
     },
     (err) => {
+      console.log("XXXXXXXXXX: fail");
       console.log("Couldn't read tokens from datastore:", err);
       callback();
     }
