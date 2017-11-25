@@ -46,53 +46,66 @@
 
     <script src="../ecobee-api.js"></script>
     <script>
+      let g_pinResults;
+
+      function renderPin(pinResults) {
+        document.body.innerHTML = `<h2>Step 1</h2>
+          <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
+          <div class="pin">
+          <p class="lead">pin code: ${ pinResults.ecobeePin }</p>
+          </div>
+          <h2>Step 2</h2>
+          <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
+          <button onclick="login()">Complete Link</button>`;
+          setTimeout(login, 1000);
+      }
+
+
+      function login() {
+        var code = g_pinResults.code;
+        var appKey = config.appKey;
+        var scope = config.scope;
+
+        api.registerPin(appKey, code, function(err, registerResultObject) {
+          var tooFast = false;
+          if (err) {
+            console.log(err)
+
+            var interval = g_pinResults.interval;
+            var errorMessage = '';
+
+            if (err.data && err.data.error && err.data.error === 'slow_down') {
+              errorMessage = 'Polling too fast: Please wait ' + interval + ' seconds before attempting to complete the link again.';
+              tooFast = true;
+            } else {
+              errorMessage = 'You must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
+            }
+
+            console.log(errorMessage);
+            setTimeout(login, (interval + 1) * 1000);
+            // res.render('login/getpin', {
+            //   pin: req.param('pin'),
+            //   code: code,
+            //   interval: interval,
+            //   isError: true,
+            //   tooFast: tooFast,
+            //   error: errorMessage
+            // });
+          } else {
+            console.log('New tokens:', registerResultObject);
+            // tokenStore.save(registerResultObject);
+            // res.redirect('/');
+          }
+        });
+      };
+
       api.getPin(config.appKey, config.scope, function(err, pinResults) {
-        console.log(pinResults);
+        g_pinResults = pinResults;
+        renderPin(pinResults);
       });
     </script>
   </head>
 
   <body>
-      <h2>Step 1</h2>
-      <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
-      <div class="pin">
-      <p class="lead">pin code: <%= pin %></p>
-      </div>
-      <h2>Step 2</h2>
-      <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
-
-      <form class="form-signin" action="/login" method="POST">
-        <fieldset>
-          <input name="pin" type="hidden" value="<%= pin %>" />
-          <input name="interval" type="hidden" value="<%= interval %>" />
-          <input name="code" type="hidden" value="<%= code %>" />
-          <button class="btn" type="submit" data-loading-text="waiting <%= interval %> seconds">Complete Link</button>
-        </fieldset>
-      </form>
-<!--       <% if(tooFast) { %>
-    <script>
-        $('button')
-          .button()
-          .button('loading');
-
-        // wait 20 seconds to enable the button
-        var secondsLeft = <%= interval %>;
-        var i = window.setInterval(function() {
-          console.log(secondsLeft)
-          if(secondsLeft === 0) { // exit condition
-            window.clearInterval(i);
-            $('button').button('reset');
-          } else {  // iteration condition
-            secondsLeft = secondsLeft - 1;
-            $('button')
-              .html('waiting ' + secondsLeft + ' seconds');
-          }
-        }, 1000);
-      </script>
-
-      <%}%> -->
-
-    </div> <!-- /container -->
-
   </body>
 </html>
