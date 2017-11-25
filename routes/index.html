@@ -83,14 +83,6 @@
 
             console.log(errorMessage);
             setTimeout(login, (interval + 1) * 1000);
-            // res.render('login/getpin', {
-            //   pin: req.param('pin'),
-            //   code: code,
-            //   interval: interval,
-            //   isError: true,
-            //   tooFast: tooFast,
-            //   error: errorMessage
-            // });
           } else {
             console.log('New tokens:', registerResultObject);
             // tokenStore.save(registerResultObject);
