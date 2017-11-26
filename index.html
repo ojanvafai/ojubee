@@ -327,20 +327,13 @@ function resumeSchedule() {
     updateState();
     alert('Resume schedule failed. Reload the page to be safe.');
   };
-  var postData = "";
-  fetchJson('resumeSchedule',
-    `/thermostats/${g_thermostatId}/resume`,
-    updateState,
-    onError,
-    postData);
 
-// exports.resume = function(req, res) {
-//   var updateFunction = new api.ResumeProgramFunction();
-//   var options = new api.ThermostatsUpdateOptions(req.params.id, [updateFunction]);
-//   updateThermostats(req, res, options);
-// }
-
+  var updateFunction = new api.ResumeProgramFunction();
+  var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
+  updateThermostats(options, updateState, onError);
 }
+
+window.resumeSchedule = resumeSchedule;
 
 function encodedValue(id) {
   // TODO: spaces as '+'
