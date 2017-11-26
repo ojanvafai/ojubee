@@ -29,8 +29,10 @@
 /* TODO
 
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
-- make thermostat/:id actually load the real data
+- make updating state not reinnerHTML page so things like the select elements don't get reset and so there isn't a flicker
 - show navbar on thermostat page
+- Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
+- Fix spinner
 - enable SW caching
 - cleanup all the global code into modules
 - load ecobee-api as a module
@@ -617,7 +619,7 @@ function stopUpdates() {
   }
 </style>
 <div id="load-spinner">
-  <img alt="Loading spinner" src="/img/spinner.gif">
+  <img alt="Loading spinner" src="/static/spinner.gif">
 </div>
 <div id="container" class="hidden">
   <div id="top-toolbar" class="split-container">
@@ -628,7 +630,7 @@ function stopUpdates() {
     </div>
     <div class="item" style="display: flex; justify-content: space-between;">
       <div id="currentTemp"></div>
-      <div style="text-align: right"><img id="spinner" class="hidden" alt="Loading spinner" src="/img/spinner.gif"></div>
+      <div style="text-align: right"><img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif"></div>
     </div>
   </div>
 
