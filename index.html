@@ -44,7 +44,7 @@
           renderHome();
         },
         'thermostat/:id': (params, state, url) => {
-          return queryThermostat(params.id);
+          return updateThermostat(params.id);
         },
       });
 
@@ -152,7 +152,7 @@
         return num / 10;
       }
 
-      function queryThermostat(id) {
+      function updateThermostat(id) {
         g_thermostatId = id;
 
         tokenStore.get((tokens) => {
@@ -175,8 +175,6 @@
 
         return id;
       }
-
-      function renderThermostat(thermostat) {
 
 function applyOnState(idPrefix, keyword) {
   var id = idPrefix + 'On';
@@ -222,10 +220,7 @@ function applyState() {
   applyOnState('fan', 'fan');
 }
 
-// TODO: Use fetch once it supports cancellation.
-function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
-  showSpinner();
-
+function thermostatState(thermostat) {
   var sensors = [];
   thermostat.remoteSensors.forEach((sensor) => {
     sensor.capability.forEach((capability) => {
@@ -275,7 +270,7 @@ function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
   if (allowedCoolRange[1] - 5 < allowedHeatRange[1])
     allowedHeatRange[1] = allowedCoolRange[1] - 5;
 
-  onLoad({
+  return {
     currentTemp: thermostat.runtime.actualTemperature / 10,
     desiredCool: thermostat.runtime.desiredCool / 10,
     desiredHeat: thermostat.runtime.desiredHeat / 10,
@@ -288,7 +283,14 @@ function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
     sensors: sensors.sort(sortByName),
     thermostatId: thermostat.identifier,
     equipmentStatus: thermostat.equipmentStatus,
-  });
+  };
+}
+
+// TODO: Use fetch once it supports cancellation.
+function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
+  showSpinner();
+
+
 
   g_pendingRequests.set(requestKey, true);
 }
@@ -321,13 +323,7 @@ function updateStateLoad(newState) {
 }
 
 function updateState() {
-  var onError = () => {
-    console.log('updateState failed.');
-  };
-  fetchJson('updateState',
-    `/thermostats/${g_thermostatId}/json`,
-    updateStateLoad,
-    onError);
+  updateThermostat(g_thermostatId);
 }
 
 function resumeSchedule() {
@@ -451,19 +447,18 @@ function stopUpdates() {
   g_updateTimer = null;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.addEventListener('focus', startUpdates);
-  window.addEventListener('blur', stopUpdates);
-  window.addEventListener('visibilityChange', () => {
-    if (document.visibilityState == 'visible')
-      startUpdates();
-    else
-      stopUpdates();
-  });
+      function renderThermostat(thermostat) {
+        window.addEventListener('focus', startUpdates);
+        window.addEventListener('blur', stopUpdates);
+        window.addEventListener('visibilityChange', () => {
+          if (document.visibilityState == 'visible')
+            startUpdates();
+          else
+            stopUpdates();
+        });
 
-  if (document.visibilityState == 'visible')
-    startUpdates();
-});
+        if (document.visibilityState == 'visible')
+          startUpdates();
 
         document.body.innerHTML = `
 <style>
@@ -666,8 +661,8 @@ window.addEventListener('DOMContentLoaded', () => {
 </div>
 <div id="nav"></div>
 `;
-        updateState();
 
+        updateStateLoad(thermostatState(thermostat));
       }
 
       function renderHome() {
