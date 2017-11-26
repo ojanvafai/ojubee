@@ -20,6 +20,18 @@
         return '<h1>404 Not found :/</h1>';
       }
 
+/* TODO
+
+- make loading thermostat/:id correctly do auth (do for all routes, not just home)
+- make thermostat/:id actually load the real data
+- enable SW caching
+- cleanup all the global code into modules
+- load ecobee-api as a module
+- move stylesheets into actual files?
+- delete all the old files
+
+*/
+
       const route = rlite(notFound, {
         '/': (params, state, url) => {
           renderHome();
