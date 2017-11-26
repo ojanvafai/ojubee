@@ -1,6 +1,13 @@
-runtime: nodejs
-env: flex
+runtime: python27
+api_version: 1
+threadsafe: true
 
-# Temporary setting to keep gcloud from uploading node_modules
-skip_files:
- - ^node_modules$
+handlers:
+- url: /static
+  static_dir: static
+  secure: always
+
+- url: /.*
+  static_files: index.html
+  upload: index.html
+  secure: always

@@ -2,15 +2,16 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <!-- TODO: reenable serviceworker goodness -->
     <!-- <link rel="manifest" href="/manifest.json"> -->
-    <link rel='stylesheet' href='public/css/base.css' />
 
-    <script src="ecobee-api.js"></script>
-    <!-- <script src="../rlite.js"></script> -->
+    <link rel='stylesheet' href='static/base.css' />
+    <script src="./static/ecobee-api.js"></script>
+
     <script type="module">
-      import tokenStore from './tokens.js';
-      import rlite from './rlite.js';
+      import tokenStore from './static/tokens.js';
+      import rlite from './static/rlite.js';
 
       function notFound() {
         return '<h1>404 Not found :/</h1>';
