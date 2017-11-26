@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.json">
+    <!-- <link rel="manifest" href="/manifest.json"> -->
     <style type="text/css">
       body {
         padding-top: 40px;
@@ -45,28 +45,100 @@
     </style>
 
     <script src="../ecobee-api.js"></script>
-    <script>
+    <script type="module">
+      import tokenStore from '../tokens.js';
+
       let g_pinResults;
 
-      function renderPin(pinResults) {
-        document.body.innerHTML = `<h2>Step 1</h2>
-          <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
-          <div class="pin">
-          <p class="lead">pin code: ${ pinResults.ecobeePin }</p>
-          </div>
-          <h2>Step 2</h2>
-          <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
-          <button onclick="login()">Complete Link</button>`;
-          setTimeout(login, 1000);
+      function refreshAuth(callback) {
+        function refreshFailed(msg) {
+          console.log(msg);
+          if (callback)
+            renderPin();
+          else
+            document.body.innerHTML = "Error: " + msg;
+        }
+
+        tokenStore.get((tokens) => {
+          if (!tokens) {
+            refreshFailed("No refresh token.");
+            return;
+          }
+
+          var refresh_token = tokens.refresh_token;
+          console.log("Refreshing with these tokens:", JSON.stringify(tokens));
+          var triesLeft = 3;
+
+          var refreshTokens = () => {
+            api.calls.refresh(refresh_token, function(err, registerResultObject) {
+              if (err) { // if we error refreshing the token re-login
+                console.log("Error refreshing token:", err);
+                triesLeft--;
+
+                if (triesLeft)
+                  setTimeout(refreshTokens, 5000);
+                else
+                  refreshFailed(`Retried refreshing token ${REFRESH_TRY_COUNT} times before giving up.`);
+              } else { // refresh of the tokens was successful to we can proceed to the main app
+                console.log('New tokens:', registerResultObject);
+                tokenStore.save(registerResultObject);
+                callback();
+              }
+            });
+          };
+          refreshTokens();
+        });
+      };
+
+      function renderHome() {
+        tokenStore.get((tokens) => {
+          if (!tokens) {
+            console.log("No auth tokens.");
+            renderPin();
+            return;
+          }
+
+          var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
+          api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions, (err, summary) => {
+            if (err) {
+              console.log("Couldn't get thermostat summary.", err);
+              renderPin();
+              return;
+            }
+
+            var thermostatArray = [];
+            for( var i = 0; i < summary.revisionList.length; i ++) {
+              var revisionArray = summary.revisionList[i].split(':');
+              thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
+            }
+
+            console.log({thermostats: thermostatArray});
+            document.body.innerHTML = "success?";
+          });
+        });
       }
 
+      function renderPin() {
+        // This should try to refresh tokens first.
+        api.calls.getPin(config.appKey, config.scope, function(err, pinResults) {
+          g_pinResults = pinResults;
+          document.body.innerHTML = `<h2>Step 1</h2>
+            <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
+            <div class="pin">
+            <p class="lead">pin code: ${ pinResults.ecobeePin }</p>
+            </div>
+            <h2>Step 2</h2>
+            <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
+            <button onclick="login()">Complete Link</button>`;
+        });
+      }
 
       function login() {
         var code = g_pinResults.code;
         var appKey = config.appKey;
         var scope = config.scope;
 
-        api.registerPin(appKey, code, function(err, registerResultObject) {
+        api.calls.registerPin(appKey, code, function(err, registerResultObject) {
           var tooFast = false;
           if (err) {
             console.log(err)
@@ -81,20 +153,19 @@
               errorMessage = 'You must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
             }
 
-            console.log(errorMessage);
+            alert(errorMessage);
             setTimeout(login, (interval + 1) * 1000);
           } else {
             console.log('New tokens:', registerResultObject);
-            // tokenStore.save(registerResultObject);
-            // res.redirect('/');
+            tokenStore.save(registerResultObject);
+            renderHome();
           }
         });
       };
 
-      api.getPin(config.appKey, config.scope, function(err, pinResults) {
-        g_pinResults = pinResults;
-        renderPin(pinResults);
-      });
+      window.login = login;
+
+      window.addEventListener('DOMContentLoaded', refreshAuth(renderHome));
     </script>
   </head>
 

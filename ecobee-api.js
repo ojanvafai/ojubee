@@ -16,11 +16,11 @@ config.isHTTPS = true;
 config.scope = 'smartWrite';
 config.GCLOUD_PROJECT = "oju-bee";
 
-var ecobee = ecobee || {};
+var api = api || {};
 
 var inMemoryCache = {};
 
-var api = {
+api.calls = {
   host: config.ecobeeHost,
   port: config.ecobeePort,
   apiRoot:'/api/1/',
@@ -103,7 +103,7 @@ var api = {
    */
   register: function(registerOptions, callback) {
     if(!registerOptions) {
-      registerOptions = new ecobee.RegisterOptions();
+      registerOptions = new api.RegisterOptions();
     }
     var data = {
       response_type: 'ecobeeAuthz',
@@ -176,7 +176,7 @@ var api = {
     }
 
     if(!thermostatSummaryOptions) {
-      thermostatSummaryOptions = new ecobee.thermostatSummaryOptions();
+      thermostatSummaryOptions = new api.thermostatSummaryOptions();
     }
 
     var data = {
@@ -203,7 +203,7 @@ var api = {
    */
   alerts: function(token, alerts_options, callback) {
     if(!alerts_options) {
-      alerts_options = new ecobee.AlertsOptions();
+      alerts_options = new api.AlertsOptions();
     }
 
     // $.ajax({
@@ -221,7 +221,7 @@ var api = {
     //   headers: {
     //     Authorization: 'Bearer ' + token
     //   },
-    //   url: ecobee.api.server + ecobee.api.apiRoot + 'alert',
+    //   url: api.api.server + api.api.apiRoot + 'alert',
 
     //   error: function(req, stat, err) {
   //               try{
@@ -229,7 +229,7 @@ var api = {
   //                 callback(error);
   //               }catch(e){
   //                 callback(new Error('timeout'));
-  //                   //var err = new ecobee.api.error.AppError('Exception: '+e);
+  //                   //var err = new api.api.error.AppError('Exception: '+e);
   //                   //err.setState(args.state);
   //                   //err.postErrorToServer();
   //               }
@@ -249,7 +249,7 @@ var api = {
    */
   thermostats: function(token, thermostats_options, callback) {
     if(!thermostats_options) {
-      thermostats_options = new ecobee.ThermostatsOptions();
+      thermostats_options = new api.ThermostatsOptions();
     }
 
     var data = {
@@ -296,14 +296,14 @@ var api = {
   }
 };
 
-ecobee.Options = function(){};
+api.Options = function(){};
 
-ecobee.Options.prototype = {
+api.Options.prototype = {
 };
 /**
  * Register options that can be passed to a register call
  */
-ecobee.RegisterOptions = function(username, password, appKey, scope) {
+api.RegisterOptions = function(username, password, appKey, scope) {
   this.username  = username || 'default@default.com';
   this.password = password || 'deadbeef';
   this.appKey = config.appKey || 'defaultappkey';
@@ -312,7 +312,7 @@ ecobee.RegisterOptions = function(username, password, appKey, scope) {
 /**
  * Alert options that can control how the alerts call functions
  */
-ecobee.AlertsOptions = function() {
+api.AlertsOptions = function() {
   var ms_day = 86400000,
   number_of_days = 31,
   go_back_by = number_of_days * ms_day,
@@ -332,7 +332,7 @@ ecobee.AlertsOptions = function() {
 /**
  * Thermostat Options which control how the thermostat call functions
  */
-ecobee.ThermostatsOptions = function(thermostat_ids) {
+api.ThermostatsOptions = function(thermostat_ids) {
   this.selection = {
     selectionType: 'thermostats',
     selectionMatch: thermostat_ids,
@@ -347,7 +347,7 @@ ecobee.ThermostatsOptions = function(thermostat_ids) {
   }
 };
 // Change HVAC mode.
-ecobee.ModeUpdateSettings = function(mode) {
+api.ModeUpdateSettings = function(mode) {
   this.settings = {
     "hvacMode": mode,
   };
@@ -357,7 +357,7 @@ ecobee.ModeUpdateSettings = function(mode) {
  * Functions get pushed into the functions array which are defined
  * farther down.
  */
-ecobee.ThermostatsUpdateOptions = function(thermostat_ids, opt_functions, opt_thermostat) {
+api.ThermostatsUpdateOptions = function(thermostat_ids, opt_functions, opt_thermostat) {
   this.selection = {
     selectionType: 'thermostats',
     selectionMatch: thermostat_ids
@@ -372,7 +372,7 @@ ecobee.ThermostatsUpdateOptions = function(thermostat_ids, opt_functions, opt_th
 /**
  * options to pass to the summary call
  */
-ecobee.ThermostatSummaryOptions = function() {
+api.ThermostatSummaryOptions = function() {
   this.selection = {
     selectionType: 'registered',
     selectionMatch: null
@@ -381,13 +381,13 @@ ecobee.ThermostatSummaryOptions = function() {
 /**
  * Function passed to the thermostatsUpdate call to resume a program.
  */
-ecobee.ResumeProgramFunction = function() {
+api.ResumeProgramFunction = function() {
   this.type = 'resumeProgram'
 }
 /**
  * Function passed to the thermostatsUpdate call to send a message to the thermostat
  */
-ecobee.SendMessageFunction = function(text) {
+api.SendMessageFunction = function(text) {
   this.type = 'sendMessage';
   this.params = {
     text: text
@@ -396,7 +396,7 @@ ecobee.SendMessageFunction = function(text) {
 /**
  * Function passed to the thermostatsUpdate call to acknowledge an alert
  */
-ecobee.AcknowledgeFunction = function(thermostat_id, acknowledge_ref, acknowledge_type, remind_later) {
+api.AcknowledgeFunction = function(thermostat_id, acknowledge_ref, acknowledge_type, remind_later) {
   this.type = 'acknowledge';
 
   this.params = {
@@ -412,7 +412,7 @@ ecobee.AcknowledgeFunction = function(thermostat_id, acknowledge_ref, acknowledg
  * Function passed to the thermostatsUpdate set the occupied state of the thermostat
  * EMS only.
  */
-ecobee.SetOccupiedFunction = function(is_occupied, hold_type) {
+api.SetOccupiedFunction = function(is_occupied, hold_type) {
   this.type = 'setOccupied';
   this.params = {
     occupied: is_occupied,
@@ -423,7 +423,7 @@ ecobee.SetOccupiedFunction = function(is_occupied, hold_type) {
  * Function passed to the thermostatsUpdate call to set a temperature hold. Need to pass both
  * temperature params.
  */
-ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, fan, hold_type, hold_hours) {
+api.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, fan, hold_type, hold_hours) {
   this.type = 'setHold';
 
   var isHours = hold_type != 'nextTransition' && hold_type != 'indefinite';
@@ -442,7 +442,7 @@ ecobee.SetHoldFunction = function(cool_hold_temp, heat_hold_temp, fan, hold_type
  * get the hierarchy for EMS thermostats based on the node passed in
  * default node is the root level. EMS Only.
  */
-ecobee.ManagementSet = function(node) {
+api.ManagementSet = function(node) {
   this.selection = {
     selectionType: 'managementSet',
     selectionMatch: node || '/'
@@ -451,7 +451,7 @@ ecobee.ManagementSet = function(node) {
 /**
  * Object that represents a climate.
  */
-ecobee.ClimateObject = function(climate_data) {
+api.ClimateObject = function(climate_data) {
   return {
     name: climate_data.name,
     climateRef: climate_data.climateRef,
@@ -469,7 +469,7 @@ ecobee.ClimateObject = function(climate_data) {
 /**
  * Represents a program and various actions that can be performed on one
  */
-ecobee.ProgramObject = function(schedule_object, climates_array) {
+api.ProgramObject = function(schedule_object, climates_array) {
   return {
     schedule: schedule_object,
     climates: climates_array,
@@ -508,7 +508,7 @@ ecobee.ProgramObject = function(schedule_object, climates_array) {
  * holds the schedule that goes with a program. Each item in the schedule array is a string climateRef that points
  * to a climate obnject
  */
-ecobee.ScheduleObject = function(scheduleArray) {
+api.ScheduleObject = function(scheduleArray) {
 
   return {schedule: scheduleArray || [
             [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
