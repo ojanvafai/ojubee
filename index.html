@@ -286,12 +286,8 @@ function thermostatState(thermostat) {
   };
 }
 
-// TODO: Use fetch once it supports cancellation.
 function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
   showSpinner();
-
-
-
   g_pendingRequests.set(requestKey, true);
 }
 
@@ -381,6 +377,8 @@ function modifyTemp(id, delta) {
   updateTemp();
 }
 
+window.modifyTemp = modifyTemp;
+
 // This rounding shouldn't be necessary, but ecobee sometimes returns
 // fractional values and everything gets confused.
 // Seems to happen if you try to set temp values that aren't allowed,
@@ -399,6 +397,28 @@ function hideSpinner() {
     spinner.classList.add('hidden');
 }
 
+
+function updateThermostats(options, onSuccess, onError) {
+  tokenStore.get((tokens) => {
+    if (!tokens) {
+      console.log("No auth tokens");
+      renderPin();
+      return;
+    }
+
+    api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
+      if (err)
+        onError("Couldn't update thermostats.", err);
+      else
+        onSuccess(val);
+    });
+  });
+}
+
+function temperatureAsInt(temp) {
+  return parseInt(temp, 10) * 10; // our canonical form is F * 10
+}
+
 function updateTemp() {
   var onError = () => {
     updateState();
@@ -406,15 +426,15 @@ function updateTemp() {
   };
 
   roundTempValues(g_state);
-  var postData = "";
-  var postData = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
-  postData += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
-
-  fetchJson('updateTemp',
-    `/thermostats/${g_thermostatId}/sethold`,
-    updateState,
-    onError,
-    postData);
+  var desiredCool = temperatureAsInt(g_state.desiredCool);
+  var desiredHeat = temperatureAsInt(g_state.desiredHeat);
+  var fan = g_state.desiredFanMode;
+  var duration = document.getElementById('duration').selectedOptions[0].value;
+  // hold_type values: dateTime, nextTransition, indefinite, holdHours.
+  // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
+  var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
+  var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
+  updateThermostats(options, updateState, onError);
 }
 
 function updateMode() {
