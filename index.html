@@ -6,24 +6,27 @@
     <!-- TODO: reenable serviceworker goodness -->
     <!-- <link rel="manifest" href="/manifest.json"> -->
 
-    <link rel='stylesheet' href='static/base.css' />
-    <script src="./static/ecobee-api.js"></script>
+    <link rel='stylesheet' href='/static/base.css' />
+    <script src="/static/ecobee-api.js"></script>
 
     <script type="module">
-      import tokenStore from './static/tokens.js';
-      import rlite from './static/rlite.js';
+      import tokenStore from '/static/tokens.js';
+      import rlite from '/static/rlite.js';
 
       function notFound() {
         return '<h1>404 Not found :/</h1>';
       }
 
       const route = rlite(notFound, {
+        'thermostat': (params, state, url) => {
+          console.log(params, state, url);
+        },
         'thermostat/:id': (params, state, url) => {
           console.log(params, state, url);
         },
       });
 
-      console.log(route(location.href));
+      console.log(location.href, route(location.pathname));
 
       function appendLink(container, href, text) {
         var a = document.createElement('a');
