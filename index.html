@@ -350,6 +350,8 @@ function toggleFan() {
   updateTemp();
 }
 
+window.toggleFan = toggleFan;
+
 function modifyTemp(id, delta) {
   g_tempsModified = true;
   g_state[id] = g_state[id] + delta;
