@@ -18,15 +18,19 @@
       }
 
       const route = rlite(notFound, {
-        'thermostat': (params, state, url) => {
-          console.log(params, state, url);
+        '/': (params, state, url) => {
+          renderHome();
         },
         'thermostat/:id': (params, state, url) => {
-          console.log(params, state, url);
+          return params.id;
         },
       });
 
-      console.log(location.href, route(location.pathname));
+      window.onpopstate = () => {
+        let html = route(location.pathname);
+        if (html)
+          document.body.innerHTML = html;
+      }
 
       function appendLink(container, href, text) {
         var a = document.createElement('a');
@@ -34,6 +38,11 @@
         a.textContent = text;
         if (a.pathname == window.location.pathname)
           a.className = 'current';
+        a.onclick = (e) => {
+          e.preventDefault();
+          history.pushState({}, null, a.pathname);
+          document.body.innerHTML = route(a.pathname);
+        };
         container.appendChild(a);
       }
 
@@ -79,10 +88,6 @@
           refreshTokens();
         });
       };
-
-      function renderThermostat() {
-
-      }
 
       function renderHome() {
         tokenStore.get((tokens) => {
@@ -148,7 +153,7 @@
             thermostatArray.forEach((thermostat) => {
               var div = document.createElement('div');
               container.appendChild(div);
-              appendLink(div, `/thermostats/${thermostat.id}`, thermostat.name);
+              appendLink(div, `/thermostat/${thermostat.id}`, thermostat.name);
             });
           });
         });
