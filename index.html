@@ -333,6 +333,13 @@ function resumeSchedule() {
     updateState,
     onError,
     postData);
+
+// exports.resume = function(req, res) {
+//   var updateFunction = new api.ResumeProgramFunction();
+//   var options = new api.ThermostatsUpdateOptions(req.params.id, [updateFunction]);
+//   updateThermostats(req, res, options);
+// }
+
 }
 
 function encodedValue(id) {
@@ -444,14 +451,13 @@ function updateMode() {
   };
 
   var newMode = document.getElementById('mode').selectedOptions[0].value;
-  var postData = `mode=${encodeURIComponent(newMode)}`;
-
-  fetchJson('updateMode',
-    `/thermostats/${g_thermostatId}/setmode`,
-    updateState,
-    onError,
-    postData);
+  var thermostats_update_options = new api.ThermostatsUpdateOptions(g_thermostatId);
+  var settings = new api.ModeUpdateSettings(newMode);
+  var options = new api.ThermostatsUpdateOptions(g_thermostatId, null, settings);
+  updateThermostats(options, updateState, onError);
 }
+
+window.updateMode = updateMode;
 
 function startUpdates() {
   if (g_updateTimer)
