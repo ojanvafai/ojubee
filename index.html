@@ -29,8 +29,8 @@
 /* TODO
 
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
-- make updating state not reinnerHTML page so things like the select elements don't get reset and so there isn't a flicker
 - show navbar on thermostat page
+- Make updates cancel the in progress request so that the spinner key doesn't get screwed up...or make it a count?
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
 - enable SW caching
 - cleanup all the global code into modules
@@ -154,7 +154,8 @@
       }
 
       function updateThermostat(id) {
-        showSpinner('updateThermostat');
+        let spinnerKey = 'updateThermostat';
+        showSpinner(spinnerKey);
         g_thermostatId = id;
 
         tokenStore.get((tokens) => {
@@ -167,6 +168,7 @@
           var thermostatsOptions = new api.ThermostatsOptions(id);
 
           api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+            hideSpinner(spinnerKey);
             if (err) {
               console.log("Couldn't refresh token.", err);
               return;
@@ -395,7 +397,10 @@ function showSpinner(key) {
     spinner.classList.remove('hidden');
 }
 
-function hideSpinner() {
+function hideSpinner(key) {
+  if (key)
+    g_pendingRequests.delete(key);
+
   let spinner = document.getElementById('spinner');
   if (spinner && !g_pendingRequests.size)
     spinner.classList.add('hidden');
@@ -412,6 +417,7 @@ function updateThermostats(options, onSuccess, onError, spinnerKey) {
     }
 
     api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
+      hideSpinner(spinnerKey);
       if (err)
         onError("Couldn't update thermostats.", err);
       else
@@ -471,8 +477,8 @@ function stopUpdates() {
   g_updateTimer = null;
 }
 
-      function renderThermostat(thermostat) {
-        window.addEventListener('focus', startUpdates);
+      function setupThermostatPage() {
+                window.addEventListener('focus', startUpdates);
         window.addEventListener('blur', stopUpdates);
         window.addEventListener('visibilityChange', () => {
           if (document.visibilityState == 'visible')
@@ -685,7 +691,11 @@ function stopUpdates() {
 </div>
 <div id="nav"></div>
 `;
+      }
 
+      function renderThermostat(thermostat) {
+        if (!document.getElementById('load-spinner'))
+          setupThermostatPage();
         updateStateLoad(thermostatState(thermostat));
       }
 
