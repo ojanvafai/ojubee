@@ -4,11 +4,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- TODO: reenable serviceworker goodness -->
     <!-- <link rel="manifest" href="/manifest.json"> -->
-    <link rel='stylesheet' href='../public/css/base.css' />
+    <link rel='stylesheet' href='public/css/base.css' />
 
-    <script src="../ecobee-api.js"></script>
+    <script src="ecobee-api.js"></script>
+    <!-- <script src="../rlite.js"></script> -->
     <script type="module">
-      import tokenStore from '../tokens.js';
+      import tokenStore from './tokens.js';
+      import rlite from './rlite.js';
+
+      function notFound() {
+        return '<h1>404 Not found :/</h1>';
+      }
+
+      const route = rlite(notFound, {
+        'thermostat/:id': (params, state, url) => {
+          console.log(params, state, url);
+        },
+      });
+
+      console.log(route(location.href));
 
       function appendLink(container, href, text) {
         var a = document.createElement('a');
@@ -61,6 +75,10 @@
           refreshTokens();
         });
       };
+
+      function renderThermostat() {
+
+      }
 
       function renderHome() {
         tokenStore.get((tokens) => {
