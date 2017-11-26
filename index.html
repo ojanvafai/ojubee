@@ -32,7 +32,6 @@
 - make updating state not reinnerHTML page so things like the select elements don't get reset and so there isn't a flicker
 - show navbar on thermostat page
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
-- Fix spinner
 - enable SW caching
 - cleanup all the global code into modules
 - load ecobee-api as a module
@@ -155,6 +154,7 @@
       }
 
       function updateThermostat(id) {
+        showSpinner('updateThermostat');
         g_thermostatId = id;
 
         tokenStore.get((tokens) => {
@@ -288,11 +288,6 @@ function thermostatState(thermostat) {
   };
 }
 
-function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
-  showSpinner();
-  g_pendingRequests.set(requestKey, true);
-}
-
 function updateStateLoad(newState) {
   if (newState.error) {
     window.location = newState.redirectUrl + window.location.pathname;
@@ -332,7 +327,7 @@ function resumeSchedule() {
 
   var updateFunction = new api.ResumeProgramFunction();
   var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-  updateThermostats(options, updateState, onError);
+  updateThermostats(options, updateState, onError, 'resumeSchedule');
 }
 
 window.resumeSchedule = resumeSchedule;
@@ -392,17 +387,23 @@ function roundTempValues(state) {
   state.desiredCool = Math.round(state.desiredCool);
 }
 
-function showSpinner() {
-  spinner.classList.remove('hidden');
+function showSpinner(key) {
+  g_pendingRequests.set(key, true);
+
+  let spinner = document.getElementById('spinner');
+  if (spinner)
+    spinner.classList.remove('hidden');
 }
 
 function hideSpinner() {
-  if (!g_pendingRequests.size)
+  let spinner = document.getElementById('spinner');
+  if (spinner && !g_pendingRequests.size)
     spinner.classList.add('hidden');
 }
 
 
-function updateThermostats(options, onSuccess, onError) {
+function updateThermostats(options, onSuccess, onError, spinnerKey) {
+  showSpinner(spinnerKey);
   tokenStore.get((tokens) => {
     if (!tokens) {
       console.log("No auth tokens");
@@ -438,7 +439,7 @@ function updateTemp() {
   // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
   var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
   var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-  updateThermostats(options, updateState, onError);
+  updateThermostats(options, updateState, onError, 'updateTemp');
 }
 
 function updateMode() {
@@ -451,7 +452,7 @@ function updateMode() {
   var thermostats_update_options = new api.ThermostatsUpdateOptions(g_thermostatId);
   var settings = new api.ModeUpdateSettings(newMode);
   var options = new api.ThermostatsUpdateOptions(g_thermostatId, null, settings);
-  updateThermostats(options, updateState, onError);
+  updateThermostats(options, updateState, onError, 'updateMode');
 }
 
 window.updateMode = updateMode;
