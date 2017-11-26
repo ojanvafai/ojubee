@@ -13,6 +13,9 @@
       import tokenStore from '/static/tokens.js';
       import rlite from '/static/rlite.js';
 
+      let g_pinResults;
+      let g_thermostatSummary;
+
       function notFound() {
         return '<h1>404 Not found :/</h1>';
       }
@@ -45,9 +48,6 @@
         };
         container.appendChild(a);
       }
-
-      let g_pinResults;
-      let g_thermostatSummary;
 
       function refreshAuth(callback) {
         function refreshFailed(msg) {
@@ -89,7 +89,10 @@
         });
       };
 
-      function renderHome() {
+      function getThermostatSummary(callback) {
+        if (g_thermostatSummary)
+          return callback(g_thermostatSummary);
+
         tokenStore.get((tokens) => {
           if (!tokens) {
             console.log("No auth tokens.");
@@ -112,49 +115,55 @@
             }
 
             g_thermostatSummary = {thermostats: thermostatArray};
+            callback(g_thermostatSummary);
+          });
+        });
 
-            document.body.innerHTML = `
-                <style>
-                  body {
-                    font-size: 40px;
-                  }
-                  a {
-                    text-decoration: none;
-                    color: black;
-                  }
-                  #container {
-                    display: flex;
-                    flex-direction: column;
-                  }
-                  #container > * {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+      }
 
-                    border: 1px solid;
-                    padding: 30px;
-                    margin: 0 30px 30px;
-                    background-color: white;
-                  }
-                  #title {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  }
-                </style>
-                <div id="title">Ojubee</div>
-                <div id="container">
-                </div>
-                <div id="nav"></div>
-                `;
+      function renderHome() {
+        getThermostatSummary((summary) => {
+          document.body.innerHTML = `
+              <style>
+                body {
+                  font-size: 40px;
+                }
+                a {
+                  text-decoration: none;
+                  color: black;
+                }
+                #container {
+                  display: flex;
+                  flex-direction: column;
+                }
+                #container > * {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
 
-            var container = document.getElementById('container');
-            thermostatArray.forEach((thermostat) => {
-              var div = document.createElement('div');
-              container.appendChild(div);
-              appendLink(div, `/thermostat/${thermostat.id}`, thermostat.name);
-            });
+                  border: 1px solid;
+                  padding: 30px;
+                  margin: 0 30px 30px;
+                  background-color: white;
+                }
+                #title {
+                  flex: 1;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+              </style>
+              <div id="title">Ojubee</div>
+              <div id="container">
+              </div>
+              <div id="nav"></div>
+              `;
+
+          var container = document.getElementById('container');
+          summary.thermostats.forEach((thermostat) => {
+            var div = document.createElement('div');
+            container.appendChild(div);
+            appendLink(div, `/thermostat/${thermostat.id}`, thermostat.name);
           });
         });
       }
