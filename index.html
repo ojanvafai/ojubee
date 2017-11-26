@@ -15,6 +15,12 @@
 
       let g_pinResults;
       let g_thermostatSummary;
+      var g_updateTimer;
+      var g_updateFreqency = 30000;
+      var g_thermostatId;
+      var g_state;
+      var g_tempsModified = false;
+      var g_pendingRequests = new Map();
 
       function notFound() {
         return '<h1>404 Not found :/</h1>';
@@ -24,6 +30,7 @@
 
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
 - make thermostat/:id actually load the real data
+- show navbar on thermostat page
 - enable SW caching
 - cleanup all the global code into modules
 - load ecobee-api as a module
@@ -37,7 +44,7 @@
           renderHome();
         },
         'thermostat/:id': (params, state, url) => {
-          return params.id;
+          return queryThermostat(params.id);
         },
       });
 
@@ -126,10 +133,540 @@
               thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
             }
 
-            g_thermostatSummary = {thermostats: thermostatArray};
+            g_thermostatSummary = thermostatArray;
             callback(g_thermostatSummary);
           });
         });
+
+      }
+
+      function sortByName(a, b) {
+        if (a.name > b.name)
+          return 1;
+        if (a.name < b.name)
+          return -1;
+        return 0;
+      }
+
+      function divide10(num) {
+        return num / 10;
+      }
+
+      function queryThermostat(id) {
+        g_thermostatId = id;
+
+        tokenStore.get((tokens) => {
+          if (!tokens) {
+            console.log("No auth tokens.");
+            renderPin();
+            return;
+          }
+
+          var thermostatsOptions = new api.ThermostatsOptions(id);
+
+          api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+            if (err) {
+              console.log("Couldn't refresh token.", err);
+              return;
+            }
+            renderThermostat(thermostats.thermostatList[0]);
+          });
+        });
+
+        return id;
+      }
+
+      function renderThermostat(thermostat) {
+
+function applyOnState(idPrefix, keyword) {
+  var id = idPrefix + 'On';
+  if (g_state.equipmentStatus.indexOf(keyword) == -1)
+    document.getElementById(id).classList.remove(id);
+  else
+    document.getElementById(id).classList.add(id);
+}
+
+function applyState() {
+  var html = '';
+  g_state.sensors.forEach(function(sensor) {
+    html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
+  });
+  document.getElementById('sensors').innerHTML = html;
+
+  ["currentTemp", "desiredCool", "desiredHeat",].forEach((id) => {
+    document.getElementById(id).textContent = g_state[id];
+  });
+
+  var mode = document.getElementById('mode');
+  for (var i = 0; i < mode.length; i++) {
+    if (mode.item(i).value == g_state.mode) {
+      mode.selectedIndex = i;
+      break;
+    }
+  }
+
+  var fan = document.getElementById('fan');
+  fan.setAttribute('state', g_state.desiredFanMode);
+
+  var override = document.getElementById('override');
+  override.textContent = g_state.overrideTime ? `Held until ${g_state.overrideTime}` : '';
+
+  var resume = document.getElementById('resume');
+  if (g_state.overrideTime)
+    resume.classList.remove('hidden');
+  else
+    resume.classList.add('hidden');
+
+  applyOnState('heat', 'auxHeat');
+  applyOnState('cool', 'compCool');
+  applyOnState('fan', 'fan');
+}
+
+// TODO: Use fetch once it supports cancellation.
+function fetchJson(requestKey, url, onLoad, onError, opt_postData) {
+  showSpinner();
+
+  var sensors = [];
+  thermostat.remoteSensors.forEach((sensor) => {
+    sensor.capability.forEach((capability) => {
+      if (capability.type == 'temperature')
+        sensors.push({
+          name: sensor.name,
+          temp: parseInt(capability.value, 10) / 10,
+        });
+    })
+  });
+
+  var overrideTime;
+  if (thermostat.events.length > 1) {
+    // TODO: Probably shouldn't hard code this and instead just check
+    // if the data is more than a year out.
+    if (thermostat.events[0]['endDate'] == '2035-01-01') {
+      overrideTime = '∞';
+    } else {
+      var endTime = thermostat.events[0]['endTime'];
+      var parts = endTime.split(':');
+      var hours = Number(parts[0]);
+      var minutes = parts[1];
+      var suffix;
+      if (hours < 12) {
+        suffix = 'AM';
+        if (hours == 0)
+          hours = 12;
+      } else {
+        suffix = 'PM';
+        if (hours != 12)
+          hours -= 12;
+      }
+
+      overrideTime = `${hours}:${minutes} ${suffix}`;
+    }
+  }
+
+  var allowedHeatRange = thermostat.runtime.desiredHeatRange.map(divide10);
+  var allowedCoolRange = thermostat.runtime.desiredCoolRange.map(divide10);
+
+  // Ensure allowed ranges keep a distance of 5 since the thermostat
+  // does that on it's own and gives weird errors if you try to do
+  // differences less than 5.
+  if (allowedHeatRange[0] + 5 > allowedCoolRange[0])
+    allowedCoolRange[0] = allowedHeatRange[0] + 5;
+
+  if (allowedCoolRange[1] - 5 < allowedHeatRange[1])
+    allowedHeatRange[1] = allowedCoolRange[1] - 5;
+
+  onLoad({
+    currentTemp: thermostat.runtime.actualTemperature / 10,
+    desiredCool: thermostat.runtime.desiredCool / 10,
+    desiredHeat: thermostat.runtime.desiredHeat / 10,
+    allowedHeatRange: allowedHeatRange,
+    allowedCoolRange: allowedCoolRange,
+    desiredFanMode: thermostat.runtime.desiredFanMode,
+    overrideTime: overrideTime,
+    mode: thermostat.settings.hvacMode,
+    name: thermostat.name,
+    sensors: sensors.sort(sortByName),
+    thermostatId: thermostat.identifier,
+    equipmentStatus: thermostat.equipmentStatus,
+  });
+
+  g_pendingRequests.set(requestKey, true);
+}
+
+function updateStateLoad(newState) {
+  if (newState.error) {
+    window.location = newState.redirectUrl + window.location.pathname;
+    return;
+  }
+
+  // Check if desiredCool/heat don't match early return and
+  // issue another updateTemp request and loop through till it takes.
+  if (g_tempsModified && g_state &&
+      (newState.desiredHeat != g_state.desiredHeat ||
+       newState.desiredCool != g_state.desiredCool)) {
+    console.log("Numbers didn't take. Retrying.",
+      newState.desiredHeat, g_state.desiredHeat,
+      newState.desiredCool, g_state.desiredCool);
+    setTimeout(updateTemp, 1000);
+    return;
+  }
+
+  hideSpinner();
+  document.getElementById('container').classList.remove('hidden');
+  document.getElementById('load-spinner').style.display = 'none';
+
+  g_tempsModified = false;
+  g_state = newState;
+  applyState();
+}
+
+function updateState() {
+  var onError = () => {
+    console.log('updateState failed.');
+  };
+  fetchJson('updateState',
+    `/thermostats/${g_thermostatId}/json`,
+    updateStateLoad,
+    onError);
+}
+
+function resumeSchedule() {
+  var onError = () => {
+    updateState();
+    alert('Resume schedule failed. Reload the page to be safe.');
+  };
+  var postData = "";
+  fetchJson('resumeSchedule',
+    `/thermostats/${g_thermostatId}/resume`,
+    updateState,
+    onError,
+    postData);
+}
+
+function encodedValue(id) {
+  // TODO: spaces as '+'
+  return id + '=' + encodeURIComponent(g_state[id]);
+}
+
+function toggleFan() {
+  if (g_state.desiredFanMode == 'auto')
+    g_state.desiredFanMode = 'on';
+  else
+    g_state.desiredFanMode = 'auto';
+
+  applyState();
+  updateTemp();
+}
+
+function modifyTemp(id, delta) {
+  g_tempsModified = true;
+  g_state[id] = g_state[id] + delta;
+
+  // Must have a minimum of 5 degrees difference.
+  // Otherwise the server tries to do this logic but
+  // goes crazy and uses fractional values.
+  if (g_state.desiredCool - g_state.desiredHeat < 5) {
+    if (id == 'desiredHeat')
+      g_state.desiredCool = g_state.desiredHeat + 5;
+    else
+      g_state.desiredHeat = g_state.desiredCool - 5;
+  }
+
+  if (g_state.desiredCool < g_state.allowedCoolRange[0])
+    g_state.desiredCool = g_state.allowedCoolRange[0];
+  if (g_state.desiredHeat < g_state.allowedHeatRange[0])
+    g_state.desiredHeat = g_state.allowedHeatRange[0];
+  if (g_state.desiredCool > g_state.allowedCoolRange[1])
+    g_state.desiredCool = g_state.allowedCoolRange[1];
+  if (g_state.desiredHeat > g_state.allowedHeatRange[1])
+    g_state.desiredHeat = g_state.allowedHeatRange[1];
+
+  applyState();
+  updateTemp();
+}
+
+// This rounding shouldn't be necessary, but ecobee sometimes returns
+// fractional values and everything gets confused.
+// Seems to happen if you try to set temp values that aren't allowed,
+// e.g. at the bounds of allowed, or hot/cold too close to each other.
+function roundTempValues(state) {
+  state.desiredHeat = Math.round(state.desiredHeat);
+  state.desiredCool = Math.round(state.desiredCool);
+}
+
+function showSpinner() {
+  spinner.classList.remove('hidden');
+}
+
+function hideSpinner() {
+  if (!g_pendingRequests.size)
+    spinner.classList.add('hidden');
+}
+
+function updateTemp() {
+  var onError = () => {
+    updateState();
+    alert('Update failed. Reload the page to be safe.');
+  };
+
+  roundTempValues(g_state);
+  var postData = "";
+  var postData = `${encodedValue('desiredHeat')}&${encodedValue('desiredCool')}&${encodedValue('desiredFanMode')}&duration=`;
+  postData += encodeURIComponent(document.getElementById('duration').selectedOptions[0].value);
+
+  fetchJson('updateTemp',
+    `/thermostats/${g_thermostatId}/sethold`,
+    updateState,
+    onError,
+    postData);
+}
+
+function updateMode() {
+  var onError = () => {
+    updateState();
+    alert('Update failed. Reload the page to be safe.');
+  };
+
+  var newMode = document.getElementById('mode').selectedOptions[0].value;
+  var postData = `mode=${encodeURIComponent(newMode)}`;
+
+  fetchJson('updateMode',
+    `/thermostats/${g_thermostatId}/setmode`,
+    updateState,
+    onError,
+    postData);
+}
+
+function startUpdates() {
+  if (g_updateTimer)
+    return;
+  updateState();
+  g_updateTimer = setInterval(updateState, g_updateFreqency);
+}
+
+function stopUpdates() {
+  if (!g_updateTimer)
+    return;
+  clearInterval(g_updateTimer);
+  g_updateTimer = null;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('focus', startUpdates);
+  window.addEventListener('blur', stopUpdates);
+  window.addEventListener('visibilityChange', () => {
+    if (document.visibilityState == 'visible')
+      startUpdates();
+    else
+      stopUpdates();
+  });
+
+  if (document.visibilityState == 'visible')
+    startUpdates();
+});
+
+        document.body.innerHTML = `
+<style>
+  * {
+    flex-wrap: wrap;
+    min-width: min-content;
+    white-space: nowrap;
+  }
+  .offline #container {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .offline::before {
+    content: "You are offline.";
+  }
+  #container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    transition: opacity 0.5s;
+  }
+  #container.hidden {
+    flex: 0;
+  }
+  #details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  #details > .split-container {
+    font-size: 20px;
+  }
+  img {
+    width: 50px;
+    min-width: 0px;
+  }
+  #load-spinner {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+  #spinner {
+    opacity: 1;
+    margin: 5px;
+    transition: opacity 0.5s;
+  }
+  #container.hidden #spinner {
+    opacity: 0;
+  }
+  #override {
+    font-size: 20px;
+  }
+  .split-container {
+    display: flex;
+    position: relative;
+  }
+  .split-container > .item {
+    flex: 1;
+    margin: 5px;
+  }
+  .split-container .button {
+    border: 1px solid;
+    padding: 10px 0;
+    font-size: 60px;
+    background: white;
+    text-align: center;
+  }
+  #top-toolbar {
+    display: flex;
+  }
+  #top-toolbar > * {
+    flex: 1;
+  }
+  #currentTemp {
+    font-size: 40px;
+  }
+  #sensors > *,
+  #state > * {
+    padding: 3px;
+    display: flex;
+  }
+  #fan[state=on] {
+    background-color: #ccc;
+  }
+  .fill {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    pointer-events: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .temp {
+    font-size: 60px;
+    font-weight: bold;
+    /* Picked to satisfy lighthouse contrast requirements. */
+    opacity: 0.64;
+  }
+  .hvacState {
+    width: 40px;
+    height: 40px;
+    margin: 5px;
+    border: 1px solid white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .heatOn {
+    background-color: pink;
+  }
+  .coolOn {
+    background-color: lightblue;
+  }
+  .fanOn {
+    background-color: #aaa;
+  }
+  .heat {
+    color: red;
+  }
+  .cool {
+    color: blue;
+  }
+</style>
+<div id="load-spinner">
+  <img alt="Loading spinner" src="/img/spinner.gif">
+</div>
+<div id="container" class="hidden">
+  <div id="top-toolbar" class="split-container">
+    <div class="item" style="display: flex; flex-wrap: nowrap;">
+      <div id="coolOn" class="hvacState">Cool</div>
+      <div id="heatOn" class="hvacState">Heat</div>
+      <div id="fanOn" class="hvacState">Fan</div>
+    </div>
+    <div class="item" style="display: flex; justify-content: space-between;">
+      <div id="currentTemp"></div>
+      <div style="text-align: right"><img id="spinner" class="hidden" alt="Loading spinner" src="/img/spinner.gif"></div>
+    </div>
+  </div>
+
+  <div id="details">
+    <div class="split-container">
+      <div class="item" id="state">
+        <label>Mode:
+          <select id="mode" onchange="updateMode()">
+            <option value="heat">Heat</option>
+            <option value="cool">Cool</option>
+            <option value="auto">Auto</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+
+        <label>Hold:
+          <select id="duration">
+            <option value="2">2 hours</option>
+            <option value="4">4 hours</option>
+            <option selected value="nextTransition">Next transition</option>
+            <option value="indefinite">Indefinite</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="item" id="sensors"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="split-container">
+      <div id="resume" class="button item center" onclick="resumeSchedule()">
+        <div style="font-size: 30px">Resume</div>
+        <div id="override"></div>
+      </div>
+      <div id="fan" class="button item" onclick="toggleFan()">Fan</div>
+    </div>
+
+    <div class="split-container">
+      <div class="cool temp fill" id="desiredCool"></div>
+      <div class="button item" onclick="modifyTemp('desiredCool', -1)">-</div>
+      <div class="button item" onclick="modifyTemp('desiredCool', 1)">+</div>
+    </div>
+
+    <div class="split-container">
+      <div class="heat temp fill" id="desiredHeat"></div>
+      <div class="button item" onclick="modifyTemp('desiredHeat', -1)">-</div>
+      <div class="button item" onclick="modifyTemp('desiredHeat', 1)">+</div>
+    </div>
+  </div>
+</div>
+<div id="nav"></div>
+`;
+        updateState();
 
       }
 
@@ -172,7 +709,7 @@
               `;
 
           var container = document.getElementById('container');
-          summary.thermostats.forEach((thermostat) => {
+          summary.forEach((thermostat) => {
             var div = document.createElement('div');
             container.appendChild(div);
             appendLink(div, `/thermostat/${thermostat.id}`, thermostat.name);
@@ -227,7 +764,9 @@
 
       window.login = login;
 
-      window.addEventListener('DOMContentLoaded', refreshAuth(renderHome));
+      window.addEventListener('DOMContentLoaded', refreshAuth(() => {
+        route(location.pathname);
+      }));
     </script>
   </head>
 
