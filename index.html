@@ -28,6 +28,9 @@
 
 /* TODO
 
+- make nav to ojubee work
+- make nav to different thermostat page not have flash of ID...make rlite be promise based?
+- Make all the callbacks be promises
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
 - Make updates cancel the in progress request so that the spinner key doesn't get screwed up...or make it a count?
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
@@ -179,302 +182,302 @@
         return id;
       }
 
-function applyOnState(idPrefix, keyword) {
-  var id = idPrefix + 'On';
-  if (g_state.equipmentStatus.indexOf(keyword) == -1)
-    document.getElementById(id).classList.remove(id);
-  else
-    document.getElementById(id).classList.add(id);
-}
-
-function applyState() {
-  var html = '';
-  g_state.sensors.forEach(function(sensor) {
-    html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
-  });
-  document.getElementById('sensors').innerHTML = html;
-
-  ["currentTemp", "desiredCool", "desiredHeat",].forEach((id) => {
-    document.getElementById(id).textContent = g_state[id];
-  });
-
-  var mode = document.getElementById('mode');
-  for (var i = 0; i < mode.length; i++) {
-    if (mode.item(i).value == g_state.mode) {
-      mode.selectedIndex = i;
-      break;
-    }
-  }
-
-  var fan = document.getElementById('fan');
-  fan.setAttribute('state', g_state.desiredFanMode);
-
-  var override = document.getElementById('override');
-  override.textContent = g_state.overrideTime ? `Held until ${g_state.overrideTime}` : '';
-
-  var resume = document.getElementById('resume');
-  if (g_state.overrideTime)
-    resume.classList.remove('hidden');
-  else
-    resume.classList.add('hidden');
-
-  applyOnState('heat', 'auxHeat');
-  applyOnState('cool', 'compCool');
-  applyOnState('fan', 'fan');
-}
-
-function thermostatState(thermostat) {
-  var sensors = [];
-  thermostat.remoteSensors.forEach((sensor) => {
-    sensor.capability.forEach((capability) => {
-      if (capability.type == 'temperature')
-        sensors.push({
-          name: sensor.name,
-          temp: parseInt(capability.value, 10) / 10,
-        });
-    })
-  });
-
-  var overrideTime;
-  if (thermostat.events.length > 1) {
-    // TODO: Probably shouldn't hard code this and instead just check
-    // if the data is more than a year out.
-    if (thermostat.events[0]['endDate'] == '2035-01-01') {
-      overrideTime = '∞';
-    } else {
-      var endTime = thermostat.events[0]['endTime'];
-      var parts = endTime.split(':');
-      var hours = Number(parts[0]);
-      var minutes = parts[1];
-      var suffix;
-      if (hours < 12) {
-        suffix = 'AM';
-        if (hours == 0)
-          hours = 12;
-      } else {
-        suffix = 'PM';
-        if (hours != 12)
-          hours -= 12;
+      function applyOnState(idPrefix, keyword) {
+        var id = idPrefix + 'On';
+        if (g_state.equipmentStatus.indexOf(keyword) == -1)
+          document.getElementById(id).classList.remove(id);
+        else
+          document.getElementById(id).classList.add(id);
       }
 
-      overrideTime = `${hours}:${minutes} ${suffix}`;
-    }
-  }
+      function applyState() {
+        var html = '';
+        g_state.sensors.forEach(function(sensor) {
+          html += '<div>' + sensor.name + ': ' + sensor.temp + '</div>';
+        });
+        document.getElementById('sensors').innerHTML = html;
 
-  var allowedHeatRange = thermostat.runtime.desiredHeatRange.map(divide10);
-  var allowedCoolRange = thermostat.runtime.desiredCoolRange.map(divide10);
+        ["currentTemp", "desiredCool", "desiredHeat",].forEach((id) => {
+          document.getElementById(id).textContent = g_state[id];
+        });
 
-  // Ensure allowed ranges keep a distance of 5 since the thermostat
-  // does that on it's own and gives weird errors if you try to do
-  // differences less than 5.
-  if (allowedHeatRange[0] + 5 > allowedCoolRange[0])
-    allowedCoolRange[0] = allowedHeatRange[0] + 5;
+        var mode = document.getElementById('mode');
+        for (var i = 0; i < mode.length; i++) {
+          if (mode.item(i).value == g_state.mode) {
+            mode.selectedIndex = i;
+            break;
+          }
+        }
 
-  if (allowedCoolRange[1] - 5 < allowedHeatRange[1])
-    allowedHeatRange[1] = allowedCoolRange[1] - 5;
+        var fan = document.getElementById('fan');
+        fan.setAttribute('state', g_state.desiredFanMode);
 
-  return {
-    currentTemp: thermostat.runtime.actualTemperature / 10,
-    desiredCool: thermostat.runtime.desiredCool / 10,
-    desiredHeat: thermostat.runtime.desiredHeat / 10,
-    allowedHeatRange: allowedHeatRange,
-    allowedCoolRange: allowedCoolRange,
-    desiredFanMode: thermostat.runtime.desiredFanMode,
-    overrideTime: overrideTime,
-    mode: thermostat.settings.hvacMode,
-    name: thermostat.name,
-    sensors: sensors.sort(sortByName),
-    thermostatId: thermostat.identifier,
-    equipmentStatus: thermostat.equipmentStatus,
-  };
-}
+        var override = document.getElementById('override');
+        override.textContent = g_state.overrideTime ? `Held until ${g_state.overrideTime}` : '';
 
-function updateStateLoad(newState) {
-  if (newState.error) {
-    window.location = newState.redirectUrl + window.location.pathname;
-    return;
-  }
+        var resume = document.getElementById('resume');
+        if (g_state.overrideTime)
+          resume.classList.remove('hidden');
+        else
+          resume.classList.add('hidden');
 
-  // Check if desiredCool/heat don't match early return and
-  // issue another updateTemp request and loop through till it takes.
-  if (g_tempsModified && g_state &&
-      (newState.desiredHeat != g_state.desiredHeat ||
-       newState.desiredCool != g_state.desiredCool)) {
-    console.log("Numbers didn't take. Retrying.",
-      newState.desiredHeat, g_state.desiredHeat,
-      newState.desiredCool, g_state.desiredCool);
-    setTimeout(updateTemp, 1000);
-    return;
-  }
+        applyOnState('heat', 'auxHeat');
+        applyOnState('cool', 'compCool');
+        applyOnState('fan', 'fan');
+      }
 
-  hideSpinner();
-  document.getElementById('container').classList.remove('hidden');
-  document.getElementById('load-spinner').style.display = 'none';
+      function thermostatState(thermostat) {
+        var sensors = [];
+        thermostat.remoteSensors.forEach((sensor) => {
+          sensor.capability.forEach((capability) => {
+            if (capability.type == 'temperature')
+              sensors.push({
+                name: sensor.name,
+                temp: parseInt(capability.value, 10) / 10,
+              });
+          })
+        });
 
-  g_tempsModified = false;
-  g_state = newState;
-  applyState();
-}
+        var overrideTime;
+        if (thermostat.events.length > 1) {
+          // TODO: Probably shouldn't hard code this and instead just check
+          // if the data is more than a year out.
+          if (thermostat.events[0]['endDate'] == '2035-01-01') {
+            overrideTime = '∞';
+          } else {
+            var endTime = thermostat.events[0]['endTime'];
+            var parts = endTime.split(':');
+            var hours = Number(parts[0]);
+            var minutes = parts[1];
+            var suffix;
+            if (hours < 12) {
+              suffix = 'AM';
+              if (hours == 0)
+                hours = 12;
+            } else {
+              suffix = 'PM';
+              if (hours != 12)
+                hours -= 12;
+            }
 
-function updateState() {
-  updateThermostat(g_thermostatId);
-}
+            overrideTime = `${hours}:${minutes} ${suffix}`;
+          }
+        }
 
-function resumeSchedule() {
-  var onError = () => {
-    updateState();
-    alert('Resume schedule failed. Reload the page to be safe.');
-  };
+        var allowedHeatRange = thermostat.runtime.desiredHeatRange.map(divide10);
+        var allowedCoolRange = thermostat.runtime.desiredCoolRange.map(divide10);
 
-  var updateFunction = new api.ResumeProgramFunction();
-  var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-  updateThermostats(options, updateState, onError, 'resumeSchedule');
-}
+        // Ensure allowed ranges keep a distance of 5 since the thermostat
+        // does that on it's own and gives weird errors if you try to do
+        // differences less than 5.
+        if (allowedHeatRange[0] + 5 > allowedCoolRange[0])
+          allowedCoolRange[0] = allowedHeatRange[0] + 5;
 
-window.resumeSchedule = resumeSchedule;
+        if (allowedCoolRange[1] - 5 < allowedHeatRange[1])
+          allowedHeatRange[1] = allowedCoolRange[1] - 5;
 
-function encodedValue(id) {
-  // TODO: spaces as '+'
-  return id + '=' + encodeURIComponent(g_state[id]);
-}
+        return {
+          currentTemp: thermostat.runtime.actualTemperature / 10,
+          desiredCool: thermostat.runtime.desiredCool / 10,
+          desiredHeat: thermostat.runtime.desiredHeat / 10,
+          allowedHeatRange: allowedHeatRange,
+          allowedCoolRange: allowedCoolRange,
+          desiredFanMode: thermostat.runtime.desiredFanMode,
+          overrideTime: overrideTime,
+          mode: thermostat.settings.hvacMode,
+          name: thermostat.name,
+          sensors: sensors.sort(sortByName),
+          thermostatId: thermostat.identifier,
+          equipmentStatus: thermostat.equipmentStatus,
+        };
+      }
 
-function toggleFan() {
-  if (g_state.desiredFanMode == 'auto')
-    g_state.desiredFanMode = 'on';
-  else
-    g_state.desiredFanMode = 'auto';
+      function updateStateLoad(newState) {
+        if (newState.error) {
+          window.location = newState.redirectUrl + window.location.pathname;
+          return;
+        }
 
-  applyState();
-  updateTemp();
-}
+        // Check if desiredCool/heat don't match early return and
+        // issue another updateTemp request and loop through till it takes.
+        if (g_tempsModified && g_state &&
+            (newState.desiredHeat != g_state.desiredHeat ||
+             newState.desiredCool != g_state.desiredCool)) {
+          console.log("Numbers didn't take. Retrying.",
+            newState.desiredHeat, g_state.desiredHeat,
+            newState.desiredCool, g_state.desiredCool);
+          setTimeout(updateTemp, 1000);
+          return;
+        }
 
-window.toggleFan = toggleFan;
+        hideSpinner();
+        document.getElementById('container').classList.remove('hidden');
+        document.getElementById('load-spinner').style.display = 'none';
 
-function modifyTemp(id, delta) {
-  g_tempsModified = true;
-  g_state[id] = g_state[id] + delta;
+        g_tempsModified = false;
+        g_state = newState;
+        applyState();
+      }
 
-  // Must have a minimum of 5 degrees difference.
-  // Otherwise the server tries to do this logic but
-  // goes crazy and uses fractional values.
-  if (g_state.desiredCool - g_state.desiredHeat < 5) {
-    if (id == 'desiredHeat')
-      g_state.desiredCool = g_state.desiredHeat + 5;
-    else
-      g_state.desiredHeat = g_state.desiredCool - 5;
-  }
+      function updateState() {
+        updateThermostat(g_thermostatId);
+      }
 
-  if (g_state.desiredCool < g_state.allowedCoolRange[0])
-    g_state.desiredCool = g_state.allowedCoolRange[0];
-  if (g_state.desiredHeat < g_state.allowedHeatRange[0])
-    g_state.desiredHeat = g_state.allowedHeatRange[0];
-  if (g_state.desiredCool > g_state.allowedCoolRange[1])
-    g_state.desiredCool = g_state.allowedCoolRange[1];
-  if (g_state.desiredHeat > g_state.allowedHeatRange[1])
-    g_state.desiredHeat = g_state.allowedHeatRange[1];
+      function resumeSchedule() {
+        var onError = () => {
+          updateState();
+          alert('Resume schedule failed. Reload the page to be safe.');
+        };
 
-  applyState();
-  updateTemp();
-}
+        var updateFunction = new api.ResumeProgramFunction();
+        var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
+        updateThermostats(options, updateState, onError, 'resumeSchedule');
+      }
 
-window.modifyTemp = modifyTemp;
+      window.resumeSchedule = resumeSchedule;
 
-// This rounding shouldn't be necessary, but ecobee sometimes returns
-// fractional values and everything gets confused.
-// Seems to happen if you try to set temp values that aren't allowed,
-// e.g. at the bounds of allowed, or hot/cold too close to each other.
-function roundTempValues(state) {
-  state.desiredHeat = Math.round(state.desiredHeat);
-  state.desiredCool = Math.round(state.desiredCool);
-}
+      function encodedValue(id) {
+        // TODO: spaces as '+'
+        return id + '=' + encodeURIComponent(g_state[id]);
+      }
 
-function showSpinner(key) {
-  g_pendingRequests.set(key, true);
+      function toggleFan() {
+        if (g_state.desiredFanMode == 'auto')
+          g_state.desiredFanMode = 'on';
+        else
+          g_state.desiredFanMode = 'auto';
 
-  let spinner = document.getElementById('spinner');
-  if (spinner)
-    spinner.classList.remove('hidden');
-}
+        applyState();
+        updateTemp();
+      }
 
-function hideSpinner(key) {
-  if (key)
-    g_pendingRequests.delete(key);
+      window.toggleFan = toggleFan;
 
-  let spinner = document.getElementById('spinner');
-  if (spinner && !g_pendingRequests.size)
-    spinner.classList.add('hidden');
-}
+      function modifyTemp(id, delta) {
+        g_tempsModified = true;
+        g_state[id] = g_state[id] + delta;
+
+        // Must have a minimum of 5 degrees difference.
+        // Otherwise the server tries to do this logic but
+        // goes crazy and uses fractional values.
+        if (g_state.desiredCool - g_state.desiredHeat < 5) {
+          if (id == 'desiredHeat')
+            g_state.desiredCool = g_state.desiredHeat + 5;
+          else
+            g_state.desiredHeat = g_state.desiredCool - 5;
+        }
+
+        if (g_state.desiredCool < g_state.allowedCoolRange[0])
+          g_state.desiredCool = g_state.allowedCoolRange[0];
+        if (g_state.desiredHeat < g_state.allowedHeatRange[0])
+          g_state.desiredHeat = g_state.allowedHeatRange[0];
+        if (g_state.desiredCool > g_state.allowedCoolRange[1])
+          g_state.desiredCool = g_state.allowedCoolRange[1];
+        if (g_state.desiredHeat > g_state.allowedHeatRange[1])
+          g_state.desiredHeat = g_state.allowedHeatRange[1];
+
+        applyState();
+        updateTemp();
+      }
+
+      window.modifyTemp = modifyTemp;
+
+      // This rounding shouldn't be necessary, but ecobee sometimes returns
+      // fractional values and everything gets confused.
+      // Seems to happen if you try to set temp values that aren't allowed,
+      // e.g. at the bounds of allowed, or hot/cold too close to each other.
+      function roundTempValues(state) {
+        state.desiredHeat = Math.round(state.desiredHeat);
+        state.desiredCool = Math.round(state.desiredCool);
+      }
+
+      function showSpinner(key) {
+        g_pendingRequests.set(key, true);
+
+        let spinner = document.getElementById('spinner');
+        if (spinner)
+          spinner.classList.remove('hidden');
+      }
+
+      function hideSpinner(key) {
+        if (key)
+          g_pendingRequests.delete(key);
+
+        let spinner = document.getElementById('spinner');
+        if (spinner && !g_pendingRequests.size)
+          spinner.classList.add('hidden');
+      }
 
 
-function updateThermostats(options, onSuccess, onError, spinnerKey) {
-  showSpinner(spinnerKey);
-  tokenStore.get((tokens) => {
-    if (!tokens) {
-      console.log("No auth tokens");
-      renderPin();
-      return;
-    }
+      function updateThermostats(options, onSuccess, onError, spinnerKey) {
+        showSpinner(spinnerKey);
+        tokenStore.get((tokens) => {
+          if (!tokens) {
+            console.log("No auth tokens");
+            renderPin();
+            return;
+          }
 
-    api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
-      hideSpinner(spinnerKey);
-      if (err)
-        onError("Couldn't update thermostats.", err);
-      else
-        onSuccess(val);
-    });
-  });
-}
+          api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
+            hideSpinner(spinnerKey);
+            if (err)
+              onError("Couldn't update thermostats.", err);
+            else
+              onSuccess(val);
+          });
+        });
+      }
 
-function temperatureAsInt(temp) {
-  return parseInt(temp, 10) * 10; // our canonical form is F * 10
-}
+      function temperatureAsInt(temp) {
+        return parseInt(temp, 10) * 10; // our canonical form is F * 10
+      }
 
-function updateTemp() {
-  var onError = () => {
-    updateState();
-    alert('Update failed. Reload the page to be safe.');
-  };
+      function updateTemp() {
+        var onError = () => {
+          updateState();
+          alert('Update failed. Reload the page to be safe.');
+        };
 
-  roundTempValues(g_state);
-  var desiredCool = temperatureAsInt(g_state.desiredCool);
-  var desiredHeat = temperatureAsInt(g_state.desiredHeat);
-  var fan = g_state.desiredFanMode;
-  var duration = document.getElementById('duration').selectedOptions[0].value;
-  // hold_type values: dateTime, nextTransition, indefinite, holdHours.
-  // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
-  var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
-  var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-  updateThermostats(options, updateState, onError, 'updateTemp');
-}
+        roundTempValues(g_state);
+        var desiredCool = temperatureAsInt(g_state.desiredCool);
+        var desiredHeat = temperatureAsInt(g_state.desiredHeat);
+        var fan = g_state.desiredFanMode;
+        var duration = document.getElementById('duration').selectedOptions[0].value;
+        // hold_type values: dateTime, nextTransition, indefinite, holdHours.
+        // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
+        var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
+        var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
+        updateThermostats(options, updateState, onError, 'updateTemp');
+      }
 
-function updateMode() {
-  var onError = () => {
-    updateState();
-    alert('Update failed. Reload the page to be safe.');
-  };
+      function updateMode() {
+        var onError = () => {
+          updateState();
+          alert('Update failed. Reload the page to be safe.');
+        };
 
-  var newMode = document.getElementById('mode').selectedOptions[0].value;
-  var thermostats_update_options = new api.ThermostatsUpdateOptions(g_thermostatId);
-  var settings = new api.ModeUpdateSettings(newMode);
-  var options = new api.ThermostatsUpdateOptions(g_thermostatId, null, settings);
-  updateThermostats(options, updateState, onError, 'updateMode');
-}
+        var newMode = document.getElementById('mode').selectedOptions[0].value;
+        var thermostats_update_options = new api.ThermostatsUpdateOptions(g_thermostatId);
+        var settings = new api.ModeUpdateSettings(newMode);
+        var options = new api.ThermostatsUpdateOptions(g_thermostatId, null, settings);
+        updateThermostats(options, updateState, onError, 'updateMode');
+      }
 
-window.updateMode = updateMode;
+      window.updateMode = updateMode;
 
-function startUpdates() {
-  if (g_updateTimer)
-    return;
-  updateState();
-  g_updateTimer = setInterval(updateState, g_updateFreqency);
-}
+      function startUpdates() {
+        if (g_updateTimer)
+          return;
+        updateState();
+        g_updateTimer = setInterval(updateState, g_updateFreqency);
+      }
 
-function stopUpdates() {
-  if (!g_updateTimer)
-    return;
-  clearInterval(g_updateTimer);
-  g_updateTimer = null;
-}
+      function stopUpdates() {
+        if (!g_updateTimer)
+          return;
+        clearInterval(g_updateTimer);
+        g_updateTimer = null;
+      }
 
       function setupThermostatPage() {
         window.addEventListener('focus', startUpdates);
