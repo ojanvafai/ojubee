@@ -32,6 +32,7 @@ V0
 - Make refresh token cron work
 
 Polish
+- stale-while-revalidate the list of thermostats for faster page load
 - make nav to ojubee from thermostat page work
 - make nav to different thermostat page not have flash of ID...make rlite be promise based?
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
@@ -52,7 +53,8 @@ Code health
           renderHome();
         },
         'thermostat/:id': (params, state, url) => {
-          return updateThermostat(params.id);
+          g_thermostatId = params.id;
+          setupThermostatPage();
         },
       });
 
@@ -163,7 +165,6 @@ Code health
       function updateThermostat(id) {
         let spinnerKey = 'updateThermostat';
         showSpinner(spinnerKey);
-        g_thermostatId = id;
 
         tokenStore.get((tokens) => {
           if (!tokens) {
@@ -183,7 +184,7 @@ Code health
               console.log("Couldn't refresh token.", err);
               return;
             }
-            renderThermostat(thermostats.thermostatList[0]);
+            updateStateLoad(thermostatState(thermostats.thermostatList[0]));
           });
         });
 
@@ -718,12 +719,6 @@ Code health
             appendLink(navBar, `/thermostat/${thermostat.id}`, thermostat.name);
           });
         });
-      }
-
-      function renderThermostat(thermostat) {
-        if (!document.getElementById('load-spinner'))
-          setupThermostatPage();
-        updateStateLoad(thermostatState(thermostat));
       }
 
       function renderHome() {
