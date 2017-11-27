@@ -29,7 +29,6 @@
 /* TODO
 
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
-- show navbar on thermostat page
 - Make updates cancel the in progress request so that the spinner key doesn't get screwed up...or make it a count?
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
 - enable SW caching
@@ -478,7 +477,7 @@ function stopUpdates() {
 }
 
       function setupThermostatPage() {
-                window.addEventListener('focus', startUpdates);
+        window.addEventListener('focus', startUpdates);
         window.addEventListener('blur', stopUpdates);
         window.addEventListener('visibilityChange', () => {
           if (document.visibilityState == 'visible')
@@ -691,6 +690,14 @@ function stopUpdates() {
 </div>
 <div id="nav"></div>
 `;
+
+        var navBar = document.getElementById('nav');
+        appendLink(navBar, "/", "Ojubee");
+        getThermostatSummary((summary) => {
+          summary.forEach((thermostat) => {
+            appendLink(navBar, `/thermostat/${thermostat.id}`, thermostat.name);
+          });
+        });
       }
 
       function renderThermostat(thermostat) {
