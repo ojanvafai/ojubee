@@ -20,7 +20,7 @@
       var g_thermostatId;
       var g_state;
       var g_tempsModified = false;
-      var g_pendingRequests = new Map();
+      var g_pendingRequestCount = new Map();
 
       function notFound() {
         return '<h1>404 Not found :/</h1>';
@@ -28,17 +28,22 @@
 
 /* TODO
 
-- make nav to ojubee work
-- make nav to different thermostat page not have flash of ID...make rlite be promise based?
-- Make all the callbacks be promises
-- make loading thermostat/:id correctly do auth (do for all routes, not just home)
-- Make updates cancel the in progress request so that the spinner key doesn't get screwed up...or make it a count?
+V0
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
+- make loading thermostat/:id correctly do auth (do for all routes, not just home)
+
+Polish
+- make nav to ojubee from thermostat page work
+- make nav to different thermostat page not have flash of ID...make rlite be promise based?
 - enable SW caching
+
+Code health
+- Make all the callbacks be promises
 - cleanup all the global code into modules
 - load ecobee-api as a module
 - move stylesheets into actual files?
 - delete all the old files
+- Abort pending fetches for a given key when starting a new one (requires either abortable fetch or using XHR)
 
 */
 
@@ -171,6 +176,9 @@
 
           api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
             hideSpinner(spinnerKey);
+            if (g_pendingRequestCount.get(spinnerKey) > 1)
+              return;
+
             if (err) {
               console.log("Couldn't refresh token.", err);
               return;
@@ -310,7 +318,6 @@
           return;
         }
 
-        hideSpinner();
         document.getElementById('container').classList.remove('hidden');
         document.getElementById('load-spinner').style.display = 'none';
 
@@ -392,7 +399,8 @@
       }
 
       function showSpinner(key) {
-        g_pendingRequests.set(key, true);
+        let numPending = g_pendingRequestCount.get(key) || 0;
+        g_pendingRequestCount.set(key, numPending + 1);
 
         let spinner = document.getElementById('spinner');
         if (spinner)
@@ -400,11 +408,16 @@
       }
 
       function hideSpinner(key) {
-        if (key)
-          g_pendingRequests.delete(key);
+        if (key) {
+          let numPending = g_pendingRequestCount.get(key);
+          if (numPending == 1)
+            g_pendingRequestCount.delete(key);
+          else
+            g_pendingRequestCount.set(key, numPending - 1);
+        }
 
         let spinner = document.getElementById('spinner');
-        if (spinner && !g_pendingRequests.size)
+        if (spinner && !g_pendingRequestCount.size)
           spinner.classList.add('hidden');
       }
 
@@ -420,6 +433,9 @@
 
           api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
             hideSpinner(spinnerKey);
+            if (g_pendingRequestCount.get(spinnerKey) > 1)
+              return;
+
             if (err)
               onError("Couldn't update thermostats.", err);
             else
@@ -559,6 +575,7 @@
     font-size: 60px;
     background: white;
     text-align: center;
+    user-select: none;
   }
   #top-toolbar {
     display: flex;
