@@ -31,18 +31,20 @@
 V0
 - Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
 - make loading thermostat/:id correctly do auth (do for all routes, not just home)
+- Make refresh token cron work
 
 Polish
 - make nav to ojubee from thermostat page work
 - make nav to different thermostat page not have flash of ID...make rlite be promise based?
-- enable SW caching
+- enable SW caching, make favicon work, make add to homescreen work, delete the public directory
+
 
 Code health
+- Update README.md and TODO files
 - Make all the callbacks be promises
 - cleanup all the global code into modules
 - load ecobee-api as a module
 - move stylesheets into actual files?
-- delete all the old files
 - Abort pending fetches for a given key when starting a new one (requires either abortable fetch or using XHR)
 
 */
