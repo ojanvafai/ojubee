@@ -26,19 +26,19 @@
 
 /* TODO
 
-V0
-- Use server database instead of localstorage...could just use appengine datastore? firebase? something AWS?
-- make loading thermostat/:id correctly do auth (do for all routes, not just home)
+V1
 - Make refresh token cron work
-
-Polish
-- stale-while-revalidate the list of thermostats for faster page load
-- make nav to ojubee from thermostat page work
-- make nav to different thermostat page not have flash of ID...make rlite be promise based?
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
+- make loading thermostat/:id correctly do auth (do for all routes, not just home)
+- require login so random people can't change our HVAC settings
+- Make sure offline mostly works (e.g. that the fetch handlers do the right thing)
 
+Perf
+- stale-while-revalidate the list of thermostats to avoid jank in navbar
+- do refresh token during idle time for faster page load? does that make sense even?
 
 Code health
+- Clear listeners when nav'ing from one page to the next?
 - Update README.md and TODO files
 - Make all the callbacks be promises
 - cleanup all the global code into modules
@@ -55,6 +55,7 @@ Code health
         'thermostat/:id': (params, state, url) => {
           g_thermostatId = params.id;
           setupThermostatPage();
+          updateNavBarClassNames();
         },
       });
 
@@ -64,18 +65,29 @@ Code health
           document.body.innerHTML = html;
       }
 
+      function updateNavBarClassNames() {
+        var links = document.getElementById('nav').childNodes;
+        for (var i = 0; i < links.length; i++) {
+          let link = links[i];
+          if (link.pathname == window.location.pathname)
+            link.classList.add('current');
+          else
+            link.classList.remove('current');
+        }
+      }
+
       function appendLink(container, href, text) {
         var a = document.createElement('a');
         a.href = href;
         a.textContent = text;
-        if (a.pathname == window.location.pathname)
-          a.className = 'current';
         a.onclick = (e) => {
           e.preventDefault();
           history.pushState({}, null, a.pathname);
-          document.body.innerHTML = route(a.pathname);
+          route(a.pathname);
         };
         container.appendChild(a);
+        // n^2, but n is at most 3 here, so don't care.
+        updateNavBarClassNames();
       }
 
       function refreshAuth(callback) {
@@ -497,17 +509,25 @@ Code health
       }
 
       function setupThermostatPage() {
-        window.addEventListener('focus', startUpdates);
-        window.addEventListener('blur', stopUpdates);
-        window.addEventListener('visibilityChange', () => {
+        // Hacktastic. Should have cleared state when left previous page
+        // so this will restart.
+        updateState();
+
+        // Also hacktastic way of making it so we don't register
+        // these multiple times.
+        if (g_updateTimer) {
+          window.addEventListener('focus', startUpdates);
+          window.addEventListener('blur', stopUpdates);
+          window.addEventListener('visibilityChange', () => {
+            if (document.visibilityState == 'visible')
+              startUpdates();
+            else
+              stopUpdates();
+          });
+
           if (document.visibilityState == 'visible')
             startUpdates();
-          else
-            stopUpdates();
-        });
-
-        if (document.visibilityState == 'visible')
-          startUpdates();
+        }
 
         document.body.innerHTML = `
 <style>
@@ -761,9 +781,7 @@ Code health
 
           var container = document.getElementById('container');
           summary.forEach((thermostat) => {
-            var div = document.createElement('div');
-            container.appendChild(div);
-            appendLink(div, `/thermostat/${thermostat.id}`, thermostat.name);
+            appendLink(container, `/thermostat/${thermostat.id}`, thermostat.name);
           });
         });
       }
