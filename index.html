@@ -38,6 +38,7 @@ Perf
 - do refresh token during idle time for faster page load? does that make sense even?
 
 Code health
+- Move config stuff to a different file so others can fork and use it too
 - Clear listeners when nav'ing from one page to the next?
 - Update README.md and TODO files
 - Make all the callbacks be promises
@@ -515,7 +516,7 @@ Code health
 
         // Also hacktastic way of making it so we don't register
         // these multiple times.
-        if (g_updateTimer) {
+        if (!g_updateTimer) {
           window.addEventListener('focus', startUpdates);
           window.addEventListener('blur', stopUpdates);
           window.addEventListener('visibilityChange', () => {
