@@ -545,6 +545,7 @@ Code health
     content: "You are offline.";
   }
   #container {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -605,12 +606,12 @@ Code health
   #top-toolbar > * {
     flex: 1;
   }
-  #currentTemp {
-    font-size: 40px;
+  #sensors {
+    display: flex;
+    flex-direction: column;
   }
-  #sensors > *,
+  #temps > *,
   #state > * {
-    padding: 3px;
     display: flex;
   }
   #fan[state=on] {
@@ -643,7 +644,6 @@ Code health
   .hvacState {
     width: 40px;
     height: 40px;
-    margin: 5px;
     border: 1px solid white;
 
     display: flex;
@@ -669,22 +669,24 @@ Code health
 <div id="load-spinner">
   <img alt="Loading spinner" src="/static/spinner.gif">
 </div>
+
 <div id="container" class="hidden">
-  <div id="top-toolbar" class="split-container">
-    <div class="item" style="display: flex; flex-wrap: nowrap;">
-      <div id="coolOn" class="hvacState">Cool</div>
-      <div id="heatOn" class="hvacState">Heat</div>
-      <div id="fanOn" class="hvacState">Fan</div>
-    </div>
-    <div class="item" style="display: flex; justify-content: space-between;">
-      <div id="currentTemp"></div>
-      <div style="text-align: right"><img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif"></div>
-    </div>
-  </div>
+  <div style="position: absolute; right: 5px; top: 5px;"><img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif"></div>
 
   <div id="details">
     <div class="split-container">
+      <div class="item" id="temps">
+        <div>Total:&nbsp;<span id="currentTemp"></span></div>
+        <div id="sensors"></div>
+      </div>
+
       <div class="item" id="state">
+        <div style="display: flex; justify-content: space-between; width: 140px; margin-bottom: 5px;">
+          <div id="coolOn" class="hvacState">Cool</div>
+          <div id="heatOn" class="hvacState">Heat</div>
+          <div id="fanOn" class="hvacState">Fan</div>
+        </div>
+
         <label>Mode:
           <select id="mode" onchange="updateMode()">
             <option value="heat">Heat</option>
@@ -703,8 +705,6 @@ Code health
           </select>
         </label>
       </div>
-
-      <div class="item" id="sensors"></div>
     </div>
   </div>
 
