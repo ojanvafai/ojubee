@@ -24,9 +24,7 @@ api.calls = {
   host: config.ecobeeHost,
   port: config.ecobeePort,
   apiRoot:'/api/1/',
-  /**
-   * Generic request code for node handles get and post requests currently
-   */
+
   makeRequest: function(options, dataString, callback) {
     let params = {
       url: `https://${options.host}${options.path}`
@@ -37,17 +35,33 @@ api.calls = {
     else
       params.data = dataString;
 
-    var url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
+    let url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
       querystring.stringify(params);
 
-    fetch(url).then(function(response) {
-      var contentType = response.headers.get("content-type");
-      if(contentType && contentType.includes("application/json"))
-        return response.json();
-      return response.text();
-    }).then(function(response) {
+    let request = new XMLHttpRequest();
+
+    request.addEventListener("load", () => {
+      let response;
+      var contentType = request.getResponseHeader("content-type");
+      if (contentType && contentType.includes("application/json"))
+        response = JSON.parse(request.response);
+      else
+        response = request.response;
       callback(null, response);
     });
+
+    request.addEventListener("error", () => {
+      callback(response.statusText, null);
+    });
+
+    request.open(options.method, url, true);
+
+    if (options.method == 'GET')
+      request.send();
+    else
+      request.send(dataString);
+
+    return request;
   },
   /**
    * get a new pin for an application. The Client id is the api key assigned to the
@@ -78,15 +92,15 @@ api.calls = {
    */
   registerPin: function(client_id, auth_code, callback) {
     var options = {
-          host: this.host,
-          port: this.port,
-          path: '/home/token',
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        };
+      host: this.host,
+      port: this.port,
+      path: '/home/token',
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    };
 
     var data = {
       code: auth_code,
