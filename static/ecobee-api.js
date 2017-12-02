@@ -38,6 +38,7 @@ api.calls = {
     let url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
       querystring.stringify(params);
 
+    // TODO: Switch to fetch once it supports cancellation.
     let request = new XMLHttpRequest();
 
     request.addEventListener("load", () => {
@@ -51,7 +52,7 @@ api.calls = {
     });
 
     request.addEventListener("error", () => {
-      callback(response.statusText, null);
+      callback(request.statusText, null);
     });
 
     request.open(options.method, url, true);
@@ -84,7 +85,7 @@ api.calls = {
       client_id: client_id
     };
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, callback);
+    return this.makeRequest(options, dataString, callback);
   },
   /**
    * Attempt to register a pin once the app has been added on the
@@ -109,7 +110,7 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, callback);
+    return this.makeRequest(options, dataString, callback);
   },
   /**
    * Register Call to obtain a token from user credentials
@@ -139,8 +140,7 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, callback);
-
+    return this.makeRequest(options, dataString, callback);
   },
   /**
    * Use a refresh token to get a new set of tokens from the server
@@ -210,7 +210,7 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, wrappedCallback);
+    return this.makeRequest(options, dataString, wrappedCallback);
   },
   /**
    * get all alerts for a given account. This has not been ported over to node yet
@@ -283,7 +283,7 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, callback);
+    return this.makeRequest(options, dataString, callback);
   },
   /**
    * updates thermostats based on the ThermostatsUpdateOptions object
@@ -306,7 +306,7 @@ api.calls = {
       }
     };
 
-    this.makeRequest(options, dataString, callback);
+    return this.makeRequest(options, dataString, callback);
   }
 };
 

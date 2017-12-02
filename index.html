@@ -18,7 +18,7 @@
       var g_thermostatId;
       var g_state;
       var g_tempsModified = false;
-      var g_pendingRequestCount = new Map();
+      var g_pendingRequests = new Map();
 
       function notFound() {
         return '<h1>404 Not found :/</h1>';
@@ -175,6 +175,13 @@ Code health
         return num / 10;
       }
 
+      function addRequest(key, request) {
+        let old = g_pendingRequests.get(key);
+        if (old)
+          old.abort();
+        g_pendingRequests.set(key, request);
+      }
+
       function updateThermostat(id) {
         let spinnerKey = 'updateThermostat';
         showSpinner(spinnerKey);
@@ -186,19 +193,18 @@ Code health
             return;
           }
 
-          var thermostatsOptions = new api.ThermostatsOptions(id);
+          let thermostatsOptions = new api.ThermostatsOptions(id);
 
-          api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+          let request = api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
             hideSpinner(spinnerKey);
-            if (g_pendingRequestCount.get(spinnerKey) > 1)
-              return;
-
             if (err) {
               console.log("Couldn't refresh token.", err);
               return;
             }
             updateStateLoad(thermostatState(thermostats.thermostatList[0]));
           });
+
+          addRequest(spinnerKey, request);
         });
 
         return id;
@@ -413,25 +419,14 @@ Code health
       }
 
       function showSpinner(key) {
-        let numPending = g_pendingRequestCount.get(key) || 0;
-        g_pendingRequestCount.set(key, numPending + 1);
-
         let spinner = document.getElementById('spinner');
         if (spinner)
           spinner.classList.remove('hidden');
       }
 
       function hideSpinner(key) {
-        if (key) {
-          let numPending = g_pendingRequestCount.get(key);
-          if (numPending == 1)
-            g_pendingRequestCount.delete(key);
-          else
-            g_pendingRequestCount.set(key, numPending - 1);
-        }
-
         let spinner = document.getElementById('spinner');
-        if (spinner && !g_pendingRequestCount.size)
+        if (spinner)
           spinner.classList.add('hidden');
       }
 
@@ -445,16 +440,14 @@ Code health
             return;
           }
 
-          api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
+          let request = api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
             hideSpinner(spinnerKey);
-            if (g_pendingRequestCount.get(spinnerKey) > 1)
-              return;
-
             if (err)
               onError("Couldn't update thermostats.", err);
             else
               onSuccess(val);
           });
+          addRequest(spinnerKey, request);
         });
       }
 
