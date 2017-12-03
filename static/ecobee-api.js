@@ -25,6 +25,55 @@ api.calls = {
   port: config.ecobeePort,
   apiRoot:'/api/1/',
 
+  makeRequestAsync: async function(options, dataString) {
+    let params = {
+      url: `https://${options.host}${options.path}`
+    };
+
+    if (options.method == 'GET')
+      params.url += '?' + dataString;
+    else
+      params.data = dataString;
+
+    let url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
+      querystring.stringify(params);
+
+    // TODO: Switch to fetch once it supports cancellation.
+    let request = options.request || new XMLHttpRequest();
+
+    return new Promise((resolve, reject) => {
+      console.log(options.method, url);
+
+      request.addEventListener("load", () => {
+        if (request.status != 200) {
+          reject(request.response);
+          return;
+        }
+
+        let response;
+        var contentType = request.getResponseHeader("content-type");
+        if (contentType && contentType.includes("application/json"))
+          response = JSON.parse(request.response);
+        else
+          response = request.response;
+        resolve(response);
+      });
+
+      request.addEventListener("error", () => {
+        console.log("Request failed: ", request.response);
+        reject(request.response);
+      });
+
+      request.open(options.method, url, true);
+
+      if (options.method == 'GET')
+        request.send();
+      else
+        request.send(dataString);
+    });
+  },
+
+  // TODO: Switch everythign over to the async/await model.
   makeRequest: function(options, dataString, callback) {
     let params = {
       url: `https://${options.host}${options.path}`
@@ -39,20 +88,27 @@ api.calls = {
       querystring.stringify(params);
 
     // TODO: Switch to fetch once it supports cancellation.
-    let request = new XMLHttpRequest();
+    let request = options.request || new XMLHttpRequest();
 
     request.addEventListener("load", () => {
+      if (request.status != 200) {
+        console.log("Request failed: ", request.response);
+        callback(request.response, null);
+        return;
+      }
+
       let response;
       var contentType = request.getResponseHeader("content-type");
       if (contentType && contentType.includes("application/json"))
         response = JSON.parse(request.response);
       else
         response = request.response;
+
       callback(null, response);
     });
 
     request.addEventListener("error", () => {
-      callback(request.statusText, null);
+      callback(request.response, null);
     });
 
     request.open(options.method, url, true);
@@ -170,32 +226,14 @@ api.calls = {
    * get the summary for the thermostats associated wtih an account
    * All options are passed in the a ThermostatSummaryOptions object
    */
-  thermostatSummary: function(token, thermostatSummaryOptions, callback) {
-    var wrappedCallback;
-    var storageKey = 'thermostatSummary';
-
-    var cacheResultFn = function(err, data) {
-      inMemoryCache[storageKey] = data;
-    };
-
-    var cachedSummary = inMemoryCache[storageKey];
-    if (cachedSummary) {
-      setTimeout(() => { callback(null, cachedSummary) });
-      wrappedCallback = cacheResultFn;
-    } else {
-      wrappedCallback = function(err, data) {
-        cacheResultFn(err, data);
-        callback(err, data);
-      }
-    }
-
+  thermostatSummary: async function(token, thermostatSummaryOptions) {
     if(!thermostatSummaryOptions) {
       thermostatSummaryOptions = new api.thermostatSummaryOptions();
     }
 
     var data = {
       json: JSON.stringify(thermostatSummaryOptions),
-      token: token
+      token: token,
     }
 
     var options = {
@@ -206,11 +244,12 @@ api.calls = {
       headers: {
         Accept:'application/json',
         Authorization: 'Bearer ' + token
-      }
+      },
+      request: new XMLHttpRequest(),
     };
 
     var dataString = querystring.stringify(data);
-    return this.makeRequest(options, dataString, wrappedCallback);
+    return this.makeRequestAsync(options, dataString);
   },
   /**
    * get all alerts for a given account. This has not been ported over to node yet
@@ -279,7 +318,7 @@ api.calls = {
       headers: {
         Accept: 'application/json',
         Authorization: 'Bearer ' + token
-      }
+      },
     };
 
     var dataString = querystring.stringify(data);

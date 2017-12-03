@@ -26,6 +26,8 @@
 
 /* TODO
 
+- Only refesh auth in error cases and at most 1x/min after successful updates?
+
 - Make refresh token cron work
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
 - require login so random people can't change our HVAC settings
@@ -81,76 +83,88 @@ Code health
         updateNavBarClassNames();
       }
 
-      function refreshAuth(callback) {
-        function refreshFailed(msg) {
-          console.log(msg);
-          if (callback)
-            renderPin();
-          else
-            document.body.innerHTML = "Error: " + msg;
-        }
+      function refreshFailed(msg) {
+        console.log(msg);
+        renderPin();
+      }
 
-        tokenStore.get((tokens) => {
-          if (!tokens) {
-            refreshFailed("No refresh token.");
-            return;
-          }
-
-          var refresh_token = tokens.refresh_token;
-          console.log("Refreshing with these tokens:", JSON.stringify(tokens));
-          var triesLeft = 3;
-
-          var refreshTokens = () => {
-            api.calls.refresh(refresh_token, function(err, registerResultObject) {
-              if (err) { // if we error refreshing the token re-login
-                console.log("Error refreshing token:", err);
-                triesLeft--;
-
-                if (triesLeft)
-                  setTimeout(refreshTokens, 5000);
-                else
-                  refreshFailed(`Retried refreshing token ${REFRESH_TRY_COUNT} times before giving up.`);
-              } else { // refresh of the tokens was successful to we can proceed to the main app
-                console.log('New tokens:', registerResultObject);
-                tokenStore.save(registerResultObject);
-                callback(registerResultObject);
-              }
-            });
-          };
-          refreshTokens();
-        });
-      };
-
-      function getThermostatSummary(callback) {
-        if (g_thermostatSummary)
-          return callback(g_thermostatSummary);
-
-        refreshAuth((tokens) => {
-          if (!tokens) {
-            console.log("No auth tokens.");
-            renderPin();
-            return;
-          }
-
-          var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
-          api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions, (err, summary) => {
-            if (err) {
-              console.log("Couldn't get thermostat summary.", err);
-              renderPin();
-              return;
+      async function refreshTokens(refreshToken) {
+        return new Promise((resolve, reject) => {
+          api.calls.refresh(refreshToken, function(err, registerResultObject) {
+            if (err) { // if we error refreshing the token re-login
+              console.log("Error refreshing token:", err);
+              reject();
+            } else { // refresh of the tokens was successful to we can proceed to the main app
+              console.log('New tokens:', registerResultObject);
+              tokenStore.save(registerResultObject);
+              resolve(registerResultObject);
             }
-
-            var thermostatArray = [];
-            for( var i = 0; i < summary.revisionList.length; i ++) {
-              var revisionArray = summary.revisionList[i].split(':');
-              thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
-            }
-
-            g_thermostatSummary = thermostatArray;
-            callback(g_thermostatSummary);
           });
         });
+      }
 
+      function sleep(time) {
+        return new Promise(resolve => setTimeout(() => resolve(), time));
+      }
+
+      async function refreshAuth() {
+        let tokens = await tokenStore.get();
+        if (!tokens) {
+          refreshFailed("No refresh token.");
+          return;
+        }
+
+        console.log("Refreshing token:", tokens.refresh_token);
+        let numRetries = 3;
+        let refreshedTokens;
+        for (var i = 0; i < numRetries; i++) {
+          try {
+            refreshedTokens = await refreshTokens(tokens.refresh_token);
+            break;
+          } catch(e) {
+            console.log('Token refresh failed: ', e);
+            await sleep(2000);
+          }
+        }
+
+        if (!refreshedTokens) {
+          refreshFailed(`Retried refreshing token ${numRetries} times before giving up.`);
+          return;
+        }
+
+        return refreshedTokens;
+      };
+
+      async function getTokens() {
+        let tokens = await tokenStore.get();
+        if (!tokens) {
+          console.log("No auth tokens. Refreshing.");
+          tokens = await refreshAuth();
+        }
+        return tokens;
+      }
+
+      async function getThermostatSummary() {
+        if (g_thermostatSummary)
+          return g_thermostatSummary;
+
+        let tokens = await getTokens();
+        var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
+
+        try {
+          let summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
+          var thermostatArray = [];
+          for( var i = 0; i < summary.revisionList.length; i ++) {
+            var revisionArray = summary.revisionList[i].split(':');
+            thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
+          }
+          g_thermostatSummary = thermostatArray;
+          return g_thermostatSummary;
+        } catch(e) {
+          console.log("Couldn't get thermostat summary.", err);
+          renderPin();
+          throw e;
+        }
       }
 
       function sortByName(a, b) {
@@ -172,32 +186,29 @@ Code health
         g_pendingRequests.set(key, request);
       }
 
-      function updateThermostat(id) {
+      async function updateThermostat(id) {
         let spinnerKey = 'updateThermostat';
         showSpinner(spinnerKey);
 
-        refreshAuth((tokens) => {
-          if (!tokens) {
-            console.log("No auth tokens.");
-            renderPin();
+        let tokens = await tokenStore.get();
+        if (!tokens) {
+          console.log("No auth tokens.");
+          renderPin();
+          return;
+        }
+
+        let thermostatsOptions = new api.ThermostatsOptions(id);
+
+        let request = api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
+          hideSpinner(spinnerKey);
+          if (err) {
+            console.log("Couldn't refresh token.", err);
             return;
           }
-
-          let thermostatsOptions = new api.ThermostatsOptions(id);
-
-          let request = api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
-            hideSpinner(spinnerKey);
-            if (err) {
-              console.log("Couldn't refresh token.", err);
-              return;
-            }
-            updateStateLoad(thermostatState(thermostats.thermostatList[0]));
-          });
-
-          addRequest(spinnerKey, request);
+          updateStateLoad(thermostatState(thermostats.thermostatList[0]));
         });
 
-        return id;
+        addRequest(spinnerKey, request);
       }
 
       function applyOnState(idPrefix, keyword) {
@@ -420,25 +431,23 @@ Code health
           spinner.classList.add('hidden');
       }
 
-
-      function updateThermostats(options, onSuccess, onError, spinnerKey) {
+      async function updateThermostats(options, onSuccess, onError, spinnerKey) {
         showSpinner(spinnerKey);
-        refreshAuth((tokens) => {
-          if (!tokens) {
-            console.log("No auth tokens");
-            renderPin();
-            return;
-          }
+        let tokens = await tokenStore.get();
+        if (!tokens) {
+          console.log("No auth tokens");
+          renderPin();
+          return;
+        }
 
-          let request = api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
-            hideSpinner(spinnerKey);
-            if (err)
-              onError("Couldn't update thermostats.", err);
-            else
-              onSuccess(val);
-          });
-          addRequest(spinnerKey, request);
+        let request = api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
+          hideSpinner(spinnerKey);
+          if (err)
+            onError("Couldn't update thermostats.", err);
+          else
+            onSuccess(val);
         });
+        addRequest(spinnerKey, request);
       }
 
       function temperatureAsInt(temp) {
@@ -502,15 +511,6 @@ Code health
         else
           stopUpdates();
       }
-
-      window.addEventListener('focus', startUpdates);
-      window.addEventListener('blur', stopUpdates);
-      window.addEventListener('visibilityChange', () => {
-        if (document.visibilityState == 'visible')
-          startUpdates();
-        else
-          stopUpdates();
-      });
 
       function renderThermostat(params, state, url) {
         g_thermostatId = params.id;
@@ -721,7 +721,7 @@ Code health
 
         var navBar = document.getElementById('nav');
         appendLink(navBar, "/", "Ojubee");
-        getThermostatSummary((summary) => {
+        getThermostatSummary().then((summary) => {
           summary.forEach((thermostat) => {
             appendLink(navBar, `/thermostat/${thermostat.id}`, thermostat.name);
           });
@@ -734,7 +734,7 @@ Code health
         g_thermostatId = null;
         updateUpdates();
 
-        getThermostatSummary((summary) => {
+        getThermostatSummary().then((summary) => {
           document.body.innerHTML = `
               <style>
                 body {
@@ -827,7 +827,16 @@ Code health
 
       window.login = login;
 
-      window.addEventListener('DOMContentLoaded', () => {
+      window.addEventListener('focus', startUpdates);
+      window.addEventListener('blur', stopUpdates);
+      window.addEventListener('visibilityChange', () => {
+        if (document.visibilityState == 'visible')
+          startUpdates();
+        else
+          stopUpdates();
+      });
+
+      refreshAuth().then((tokens) => {
         route(location.pathname);
       });
     </script>

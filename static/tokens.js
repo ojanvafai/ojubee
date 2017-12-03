@@ -11,17 +11,6 @@ let headers = new Headers({
 // also catches things like being offline.
 
 export default class {
-  static delete(callback) {
-    fetch(url, {
-      method: 'delete',
-      headers: headers,
-    }).then(function(response) {
-      if (!response.ok)
-        console.log("Couldn't delete tokens from datastore: ", tokens);
-      callback();
-    });
-  };
-
   static save(tokens) {
     fetch(url, {
       method: 'put',
@@ -40,18 +29,20 @@ export default class {
     localStorage.setItem(key, JSON.stringify(tokens));
   };
 
-  static get(callback) {
-    fetch(url, {
-      method: 'get',
-      headers: headers,
-    }).then(function(response) {
-      if (!response.ok) {
-        callback();
-        return;
-      }
-      return response.json();
-    }).then(function(tokens) {
-      callback(tokens);
+  static async get(callback) {
+    return new Promise(resolve => {
+      fetch(url, {
+        method: 'get',
+        headers: headers,
+      }).then(function(response) {
+        if (!response.ok) {
+          resolve();
+          return;
+        }
+        return response.json();
+      }).then(function(tokens) {
+        resolve(tokens);
+      });
     });
   };
 }
