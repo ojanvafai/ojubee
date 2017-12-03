@@ -30,7 +30,7 @@ body {
   flex: 1;
   padding: 10px;
   margin: 5px;
-  border: 1px solid;
+  border: 1px solid white;
   white-space: nowrap;
   font-size: 20px;
   text-align: center;
