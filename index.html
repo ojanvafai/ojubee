@@ -568,7 +568,6 @@ Code health
   }
   #spinner {
     opacity: 1;
-    margin: 5px;
     transition: opacity 0.5s;
   }
   #override {
@@ -661,10 +660,11 @@ Code health
   <img alt="Loading spinner" src="/static/spinner.gif">
 </div>
 
+<div style="z-index: 1; position: absolute; right: 0px; top: 0px;">
+  <img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif">
+</div>
+
 <div id="container" class="hidden">
-  <div style="z-index: 1; position: absolute; right: 5px; top: 5px;">
-    <img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif">
-  </div>
 
   <div id="details">
     <div class="split-container">
