@@ -26,10 +26,8 @@
 
 /* TODO
 
-V1
 - Make refresh token cron work
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
-- make loading thermostat/:id correctly do auth (do for all routes, not just home)
 - require login so random people can't change our HVAC settings
 - Make sure offline mostly works (e.g. that the fetch handlers do the right thing)
 
@@ -39,25 +37,17 @@ Perf
 
 Code health
 - Move config stuff to a different file so others can fork and use it too
-- Clear listeners when nav'ing from one page to the next?
 - Update README.md and TODO files
 - Make all the callbacks be promises
 - cleanup all the global code into modules
 - load ecobee-api as a module
 - move stylesheets into actual files?
-- Abort pending fetches for a given key when starting a new one (requires either abortable fetch or using XHR)
 
 */
 
       const route = rlite(notFound, {
-        '/': (params, state, url) => {
-          renderHome();
-        },
-        'thermostat/:id': (params, state, url) => {
-          g_thermostatId = params.id;
-          setupThermostatPage();
-          updateNavBarClassNames();
-        },
+        '/': renderHome,
+        'thermostat/:id': renderThermostat,
       });
 
       window.onpopstate = () => {
@@ -123,7 +113,7 @@ Code health
               } else { // refresh of the tokens was successful to we can proceed to the main app
                 console.log('New tokens:', registerResultObject);
                 tokenStore.save(registerResultObject);
-                callback();
+                callback(registerResultObject);
               }
             });
           };
@@ -135,7 +125,7 @@ Code health
         if (g_thermostatSummary)
           return callback(g_thermostatSummary);
 
-        tokenStore.get((tokens) => {
+        refreshAuth((tokens) => {
           if (!tokens) {
             console.log("No auth tokens.");
             renderPin();
@@ -186,7 +176,7 @@ Code health
         let spinnerKey = 'updateThermostat';
         showSpinner(spinnerKey);
 
-        tokenStore.get((tokens) => {
+        refreshAuth((tokens) => {
           if (!tokens) {
             console.log("No auth tokens.");
             renderPin();
@@ -433,7 +423,7 @@ Code health
 
       function updateThermostats(options, onSuccess, onError, spinnerKey) {
         showSpinner(spinnerKey);
-        tokenStore.get((tokens) => {
+        refreshAuth((tokens) => {
           if (!tokens) {
             console.log("No auth tokens");
             renderPin();
@@ -489,9 +479,13 @@ Code health
       window.updateMode = updateMode;
 
       function startUpdates() {
-        if (g_updateTimer)
+        if (!g_thermostatId)
           return;
+
         updateState();
+
+        if (!g_updateTimer)
+          return;
         g_updateTimer = setInterval(updateState, g_updateFreqency);
       }
 
@@ -502,26 +496,25 @@ Code health
         g_updateTimer = null;
       }
 
-      function setupThermostatPage() {
-        // Hacktastic. Should have cleared state when left previous page
-        // so this will restart.
-        updateState();
+      function updateUpdates() {
+        if (g_thermostatId)
+          startUpdates();
+        else
+          stopUpdates();
+      }
 
-        // Also hacktastic way of making it so we don't register
-        // these multiple times.
-        if (!g_updateTimer) {
-          window.addEventListener('focus', startUpdates);
-          window.addEventListener('blur', stopUpdates);
-          window.addEventListener('visibilityChange', () => {
-            if (document.visibilityState == 'visible')
-              startUpdates();
-            else
-              stopUpdates();
-          });
+      window.addEventListener('focus', startUpdates);
+      window.addEventListener('blur', stopUpdates);
+      window.addEventListener('visibilityChange', () => {
+        if (document.visibilityState == 'visible')
+          startUpdates();
+        else
+          stopUpdates();
+      });
 
-          if (document.visibilityState == 'visible')
-            startUpdates();
-        }
+      function renderThermostat(params, state, url) {
+        g_thermostatId = params.id;
+        updateUpdates();
 
         document.body.innerHTML = `
 <style>
@@ -733,9 +726,14 @@ Code health
             appendLink(navBar, `/thermostat/${thermostat.id}`, thermostat.name);
           });
         });
+
+        updateNavBarClassNames();
       }
 
       function renderHome() {
+        g_thermostatId = null;
+        updateUpdates();
+
         getThermostatSummary((summary) => {
           document.body.innerHTML = `
               <style>
@@ -781,6 +779,8 @@ Code health
       }
 
       function renderPin() {
+        g_thermostatId = null;
+
         // This should try to refresh tokens first.
         api.calls.getPin(config.appKey, config.scope, function(err, pinResults) {
           g_pinResults = pinResults;
@@ -820,16 +820,16 @@ Code health
           } else {
             console.log('New tokens:', registerResultObject);
             tokenStore.save(registerResultObject);
-            renderHome();
+            route(location.pathname);
           }
         });
       };
 
       window.login = login;
 
-      window.addEventListener('DOMContentLoaded', refreshAuth(() => {
+      window.addEventListener('DOMContentLoaded', () => {
         route(location.pathname);
-      }));
+      });
     </script>
   </head>
 
