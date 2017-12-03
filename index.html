@@ -614,7 +614,7 @@
     color: blue;
   }
 </style>
-<div id="loader" class="hidden"></div>
+<div id="loader"></div>
 
 <div id="container" class="hidden">
 
@@ -694,44 +694,47 @@
         g_thermostatId = null;
         updateUpdates();
 
+        document.body.innerHTML = `
+            <style>
+              body {
+                font-size: 40px;
+              }
+              a {
+                text-decoration: none;
+                color: black;
+              }
+              #container {
+                display: flex;
+                flex-direction: column;
+              }
+              #container > * {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                border: 1px solid;
+                padding: 30px;
+                margin: 0 30px 30px;
+                background-color: white;
+              }
+              #title {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+            </style>
+            <div id="loader"></div>
+            <div id="title"></div>
+            <div id="container"></div>
+            <div id="nav"></div>
+            `;
+
         getThermostatSummary().then((summary) => {
-          document.body.innerHTML = `
-              <style>
-                body {
-                  font-size: 40px;
-                }
-                a {
-                  text-decoration: none;
-                  color: black;
-                }
-                #container {
-                  display: flex;
-                  flex-direction: column;
-                }
-                #container > * {
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
+          document.getElementById('loader').classList.add('hidden');
+          document.getElementById('title').textContent = 'Ojubee';
 
-                  border: 1px solid;
-                  padding: 30px;
-                  margin: 0 30px 30px;
-                  background-color: white;
-                }
-                #title {
-                  flex: 1;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-              </style>
-              <div id="title">Ojubee</div>
-              <div id="container">
-              </div>
-              <div id="nav"></div>
-              `;
-
-          var container = document.getElementById('container');
+          let container = document.getElementById('container');
           summary.forEach((thermostat) => {
             appendLink(container, `/thermostat/${thermostat.id}`, thermostat.name);
           });
