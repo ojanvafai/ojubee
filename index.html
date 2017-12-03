@@ -115,20 +115,21 @@
         let tokens = await getTokens();
         var thermostatSummaryOptions = new api.ThermostatSummaryOptions();
 
+        let summary;
         try {
-          let summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
-          var thermostatArray = [];
-          for( var i = 0; i < summary.revisionList.length; i ++) {
-            var revisionArray = summary.revisionList[i].split(':');
-            thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
-          }
-          g_thermostatSummary = thermostatArray;
-          return g_thermostatSummary;
+          summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
         } catch(e) {
-          console.log("Couldn't get thermostat summary: ", e);
-          renderPin();
-          throw e;
+          await refreshAuth();
+          summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
         }
+
+        var thermostatArray = [];
+        for( var i = 0; i < summary.revisionList.length; i ++) {
+          var revisionArray = summary.revisionList[i].split(':');
+          thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
+        }
+        g_thermostatSummary = thermostatArray;
+        return g_thermostatSummary;
       }
 
       function sortByName(a, b) {
@@ -154,13 +155,7 @@
         let loaderKey = 'updateThermostat';
         showLoader(loaderKey);
 
-        let tokens = await tokenStore.get();
-        if (!tokens) {
-          console.log("No auth tokens.");
-          renderPin();
-          return;
-        }
-
+        let tokens = await getTokens();
         let thermostatsOptions = new api.ThermostatsOptions(id);
 
         let request = new XMLHttpRequest();
@@ -170,7 +165,8 @@
         try {
           thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
         } catch(e) {
-          console.log("Couldn't update thermostat: ", e);
+          await refreshAuth();
+          thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
         }
 
         if (thermostats)
@@ -401,13 +397,7 @@
       async function updateThermostats(options, onSuccess, onError, loaderKey) {
         showLoader(loaderKey);
 
-        let tokens = await tokenStore.get();
-        if (!tokens) {
-          console.log("No auth tokens");
-          renderPin();
-          return;
-        }
-
+        let tokens = await getTokens();
         let request = new XMLHttpRequest();
         addRequest(loaderKey, request);
 
@@ -416,6 +406,8 @@
           data = await api.calls.updateThermostats(tokens.access_token, options, request);
         } catch(e) {
           onError("Couldn't update thermostats.", e);
+          await refreshAuth();
+          data = await api.calls.updateThermostats(tokens.access_token, options, request);
         }
 
         if (data)
@@ -797,9 +789,7 @@
           stopUpdates();
       });
 
-      refreshAuth().then((tokens) => {
-        route(location.pathname);
-      });
+      route(location.pathname);
     </script>
   </head>
 

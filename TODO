@@ -1,6 +1,4 @@
 - store tokens in a global and/or localstorage since we now fallback to refreshing on errors.
-- await refreshAuth on errors before falling back to the pin page
-- Only refesh auth in error cases and at most 1x/min after successful updates?
 
 - Make refresh token cron work
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
