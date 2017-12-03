@@ -39,8 +39,6 @@ api.calls = {
       querystring.stringify(params);
 
     return new Promise((resolve, reject) => {
-      console.log(options.method, url);
-
       request.addEventListener("load", () => {
         if (request.status != 200) {
           reject(request.response);

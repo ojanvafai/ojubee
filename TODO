@@ -1,5 +1,6 @@
 - store tokens in a global and/or localstorage since we now fallback to refreshing on errors.
 
+- stale-while-revalidate the list of thermostats instead of perma-caching it in localStorage
 - Make refresh token cron work
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
 - require login so random people can't change our HVAC settings
@@ -12,7 +13,6 @@ Polish
 - Style select elements to not be quite so ugly
 
 Perf
-- stale-while-revalidate the list of thermostats to avoid jank in navbar
 - do refresh token during idle time for faster page load? does that make sense even?
 
 Code health

@@ -108,7 +108,15 @@
         return tokens;
       }
 
+      let g_summaryKey = 'thermostatSummary';
+
       async function getThermostatSummary() {
+        if (!g_thermostatSummary) {
+          let summary = localStorage[g_summaryKey];
+          if (summary)
+            g_thermostatSummary = JSON.parse(summary);
+        }
+
         if (g_thermostatSummary)
           return g_thermostatSummary;
 
@@ -128,7 +136,10 @@
           var revisionArray = summary.revisionList[i].split(':');
           thermostatArray.push({ name: revisionArray[1], id: revisionArray[0]} );
         }
+
         g_thermostatSummary = thermostatArray;
+        localStorage[g_summaryKey] = JSON.stringify(thermostatArray);
+
         return g_thermostatSummary;
       }
 
