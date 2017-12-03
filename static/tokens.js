@@ -11,36 +11,38 @@ let headers = new Headers({
 // also catches things like being offline.
 
 export default class {
-  static save(tokens) {
-    fetch(url, {
-      method: 'put',
-      headers: headers,
-      body: JSON.stringify(tokens)
-    }).then(function(response) {
-      if (!response.ok) {
-        console.log("Couldn't write token to datastore: ", tokens);
-        return;
-      }
-      return response.text();
-    }).then(function(data) {
-      console.log("Wrote tokens to datastore: ", data);
+  static async save(tokens) {
+    return new Promise(resolve => {
+      fetch(url, {
+        method: 'put',
+        headers: headers,
+        body: JSON.stringify(tokens)
+      }).then((response) => {
+        if (!response.ok) {
+          console.log("Couldn't write token to datastore: ", tokens);
+          resolve();
+          return;
+        }
+        return response.text();
+      }).then((savedTokens) => {
+        console.log("Wrote tokens to datastore: ", savedTokens);
+        resolve(savedTokens);
+      });
     });
-
-    localStorage.setItem(key, JSON.stringify(tokens));
   };
 
-  static async get(callback) {
+  static async get() {
     return new Promise(resolve => {
       fetch(url, {
         method: 'get',
         headers: headers,
-      }).then(function(response) {
+      }).then((response) => {
         if (!response.ok) {
           resolve();
           return;
         }
         return response.json();
-      }).then(function(tokens) {
+      }).then((tokens) => {
         resolve(tokens);
       });
     });

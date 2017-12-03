@@ -25,7 +25,7 @@ api.calls = {
   port: config.ecobeePort,
   apiRoot:'/api/1/',
 
-  makeRequestAsync: async function(options, dataString) {
+  makeRequestAsync: async function(options, dataString, request) {
     let params = {
       url: `https://${options.host}${options.path}`
     };
@@ -37,9 +37,6 @@ api.calls = {
 
     let url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
       querystring.stringify(params);
-
-    // TODO: Switch to fetch once it supports cancellation.
-    let request = options.request || new XMLHttpRequest();
 
     return new Promise((resolve, reject) => {
       console.log(options.method, url);
@@ -72,59 +69,11 @@ api.calls = {
         request.send(dataString);
     });
   },
-
-  // TODO: Switch everythign over to the async/await model.
-  makeRequest: function(options, dataString, callback) {
-    let params = {
-      url: `https://${options.host}${options.path}`
-    };
-
-    if (options.method == 'GET')
-      params.url += '?' + dataString;
-    else
-      params.data = dataString;
-
-    let url = "https://l1cc9htdah.execute-api.us-east-1.amazonaws.com/prod/ojubee?" +
-      querystring.stringify(params);
-
-    // TODO: Switch to fetch once it supports cancellation.
-    let request = options.request || new XMLHttpRequest();
-
-    request.addEventListener("load", () => {
-      if (request.status != 200) {
-        console.log("Request failed: ", request.response);
-        callback(request.response, null);
-        return;
-      }
-
-      let response;
-      var contentType = request.getResponseHeader("content-type");
-      if (contentType && contentType.includes("application/json"))
-        response = JSON.parse(request.response);
-      else
-        response = request.response;
-
-      callback(null, response);
-    });
-
-    request.addEventListener("error", () => {
-      callback(request.response, null);
-    });
-
-    request.open(options.method, url, true);
-
-    if (options.method == 'GET')
-      request.send();
-    else
-      request.send(dataString);
-
-    return request;
-  },
   /**
    * get a new pin for an application. The Client id is the api key assigned to the
    * application
    */
-  getPin: function(client_id, scope, callback) {
+  getPin: async function(client_id, scope) {
     var options = {
       host: this.host,
       port: this.port,
@@ -141,13 +90,13 @@ api.calls = {
       client_id: client_id
     };
     var dataString = querystring.stringify(data);
-    return this.makeRequest(options, dataString, callback);
+    return this.makeRequestAsync(options, dataString, new XMLHttpRequest());
   },
   /**
    * Attempt to register a pin once the app has been added on the
    * ecobee app portal
    */
-  registerPin: function(client_id, auth_code, callback) {
+  registerPin: async function(client_id, auth_code) {
     var options = {
       host: this.host,
       port: this.port,
@@ -166,42 +115,12 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    return this.makeRequest(options, dataString, callback);
-  },
-  /**
-   * Register Call to obtain a token from user credentials
-   * callback signature callback(error, data)
-   */
-  register: function(registerOptions, callback) {
-    if(!registerOptions) {
-      registerOptions = new api.RegisterOptions();
-    }
-    var data = {
-      response_type: 'ecobeeAuthz',
-      client_id: registerOptions.appKey,
-      scope: registerOptions.scope,
-      username: registerOptions.username,
-      password: registerOptions.password
-    }
-
-    var options = {
-      host: this.host,
-      port: this.port,
-      path: '/home/authorize',
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    };
-
-    var dataString = querystring.stringify(data);
-    return this.makeRequest(options, dataString, callback);
+    return this.makeRequestAsync(options, dataString, new XMLHttpRequest());
   },
   /**
    * Use a refresh token to get a new set of tokens from the server
    */
-  refresh: function(refresh_token, callback) {
+  refresh: async function(refresh_token) {
     var data = {
       grant_type: 'refresh_token',
       code: refresh_token,
@@ -220,12 +139,8 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    this.makeRequest(options, dataString, callback);
+    return this.makeRequestAsync(options, dataString, new XMLHttpRequest());
   },
-  /**
-   * get the summary for the thermostats associated wtih an account
-   * All options are passed in the a ThermostatSummaryOptions object
-   */
   thermostatSummary: async function(token, thermostatSummaryOptions) {
     if(!thermostatSummaryOptions) {
       thermostatSummaryOptions = new api.thermostatSummaryOptions();
@@ -245,62 +160,12 @@ api.calls = {
         Accept:'application/json',
         Authorization: 'Bearer ' + token
       },
-      request: new XMLHttpRequest(),
     };
 
     var dataString = querystring.stringify(data);
-    return this.makeRequestAsync(options, dataString);
+    return this.makeRequestAsync(options, dataString, new XMLHttpRequest());
   },
-  /**
-   * get all alerts for a given account. This has not been ported over to node yet
-   */
-  alerts: function(token, alerts_options, callback) {
-    if(!alerts_options) {
-      alerts_options = new api.AlertsOptions();
-    }
-
-    // $.ajax({
-    //   data: {
-    //     json: JSON.stringify(alerts_options),
-    //     token: token
-    //   },
-
-    //   dataType: 'json',
-
-    //   contentType:'application/json',
-    //   cache: false,
-    //   type: 'GET',
-    //   timeout:30000,
-    //   headers: {
-    //     Authorization: 'Bearer ' + token
-    //   },
-    //   url: api.api.server + api.api.apiRoot + 'alert',
-
-    //   error: function(req, stat, err) {
-  //               try{
-  //                 var error = that.createError(req);
-  //                 callback(error);
-  //               }catch(e){
-  //                 callback(new Error('timeout'));
-  //                   //var err = new api.api.error.AppError('Exception: '+e);
-  //                   //err.setState(args.state);
-  //                   //err.postErrorToServer();
-  //               }
-  //           },
-
-    //   success: function(data, stat, req) {
-    //     if(!data) {
-    //       callback(new Error('no data returned'));
-    //     } else {
-    //       callback(null, data);
-    //     }
-    //   }
-    // });
-  },
-  /**
-   * gets thermostats defined by the ThermostatsOptions object.
-   */
-  thermostats: function(token, thermostats_options, callback) {
+  thermostats: async function(token, thermostats_options, request) {
     if(!thermostats_options) {
       thermostats_options = new api.ThermostatsOptions();
     }
@@ -322,7 +187,7 @@ api.calls = {
     };
 
     var dataString = querystring.stringify(data);
-    return this.makeRequest(options, dataString, callback);
+    return this.makeRequestAsync(options, dataString, request);
   },
   /**
    * updates thermostats based on the ThermostatsUpdateOptions object
@@ -330,7 +195,7 @@ api.calls = {
    * so that multiple updates can be completed at one time.
    * updates are completed in order they appear in the functions array
    */
-  updateThermostats: function(token, thermostats_update_options, callback) {
+  updateThermostats: async function(token, thermostats_update_options, request) {
     var dataString = JSON.stringify(thermostats_update_options);
 
     var options = {
@@ -342,10 +207,10 @@ api.calls = {
         Accept:'application/json',
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json'
-      }
+      },
     };
 
-    return this.makeRequest(options, dataString, callback);
+    return this.makeRequestAsync(options, dataString, request);
   }
 };
 

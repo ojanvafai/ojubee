@@ -26,8 +26,11 @@
 
 /* TODO
 
+- store tokens in a global and/or localstorage since we now fallback to refreshing on errors.
+- await refreshAuth on errors before falling back to the pin page
 - Only refesh auth in error cases and at most 1x/min after successful updates?
 
+- Show loading animation when refreshing auth when app not registered
 - Make refresh token cron work
 - enable SW caching, make favicon work, make add to homescreen work, delete the public directory
 - require login so random people can't change our HVAC settings
@@ -40,7 +43,6 @@ Perf
 Code health
 - Move config stuff to a different file so others can fork and use it too
 - Update README.md and TODO files
-- Make all the callbacks be promises
 - cleanup all the global code into modules
 - load ecobee-api as a module
 - move stylesheets into actual files?
@@ -88,21 +90,6 @@ Code health
         renderPin();
       }
 
-      async function refreshTokens(refreshToken) {
-        return new Promise((resolve, reject) => {
-          api.calls.refresh(refreshToken, function(err, registerResultObject) {
-            if (err) { // if we error refreshing the token re-login
-              console.log("Error refreshing token:", err);
-              reject();
-            } else { // refresh of the tokens was successful to we can proceed to the main app
-              console.log('New tokens:', registerResultObject);
-              tokenStore.save(registerResultObject);
-              resolve(registerResultObject);
-            }
-          });
-        });
-      }
-
       function sleep(time) {
         return new Promise(resolve => setTimeout(() => resolve(), time));
       }
@@ -117,9 +104,10 @@ Code health
         console.log("Refreshing token:", tokens.refresh_token);
         let numRetries = 3;
         let refreshedTokens;
+        // TODO: Don't retry for cases where we know it won't work like tokens being deauthorized
         for (var i = 0; i < numRetries; i++) {
           try {
-            refreshedTokens = await refreshTokens(tokens.refresh_token);
+            refreshedTokens = await api.calls.refresh(tokens.refresh_token);
             break;
           } catch(e) {
             console.log('Token refresh failed: ', e);
@@ -132,6 +120,7 @@ Code health
           return;
         }
 
+        await tokenStore.save(refreshedTokens);
         return refreshedTokens;
       };
 
@@ -161,7 +150,7 @@ Code health
           g_thermostatSummary = thermostatArray;
           return g_thermostatSummary;
         } catch(e) {
-          console.log("Couldn't get thermostat summary.", err);
+          console.log("Couldn't get thermostat summary: ", e);
           renderPin();
           throw e;
         }
@@ -199,16 +188,20 @@ Code health
 
         let thermostatsOptions = new api.ThermostatsOptions(id);
 
-        let request = api.calls.thermostats(tokens.access_token, thermostatsOptions, function(err, thermostats) {
-          hideSpinner(spinnerKey);
-          if (err) {
-            console.log("Couldn't refresh token.", err);
-            return;
-          }
-          updateStateLoad(thermostatState(thermostats.thermostatList[0]));
-        });
-
+        let request = new XMLHttpRequest();
         addRequest(spinnerKey, request);
+
+        let thermostats;
+        try {
+          thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
+        } catch(e) {
+          console.log("Couldn't update thermostat: ", e);
+        }
+
+        if (thermostats)
+          updateStateLoad(thermostatState(thermostats.thermostatList[0]));
+
+        hideSpinner(spinnerKey);
       }
 
       function applyOnState(idPrefix, keyword) {
@@ -433,6 +426,7 @@ Code health
 
       async function updateThermostats(options, onSuccess, onError, spinnerKey) {
         showSpinner(spinnerKey);
+
         let tokens = await tokenStore.get();
         if (!tokens) {
           console.log("No auth tokens");
@@ -440,14 +434,20 @@ Code health
           return;
         }
 
-        let request = api.calls.updateThermostats(tokens.access_token, options, (err, val) => {
-          hideSpinner(spinnerKey);
-          if (err)
-            onError("Couldn't update thermostats.", err);
-          else
-            onSuccess(val);
-        });
+        let request = new XMLHttpRequest();
         addRequest(spinnerKey, request);
+
+        let data;
+        try {
+          data = await api.calls.updateThermostats(tokens.access_token, options, request);
+        } catch(e) {
+          onError("Couldn't update thermostats.", e);
+        }
+
+        if (data)
+          onSuccess(data);
+
+        hideSpinner(spinnerKey);
       }
 
       function temperatureAsInt(temp) {
@@ -778,51 +778,49 @@ Code health
         });
       }
 
-      function renderPin() {
+      async function renderPin() {
         g_thermostatId = null;
 
         // This should try to refresh tokens first.
-        api.calls.getPin(config.appKey, config.scope, function(err, pinResults) {
-          g_pinResults = pinResults;
-          document.body.innerHTML = `<h2>Step 1</h2>
-            <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
-            <div class="pin">
-            <p class="lead">pin code: ${ pinResults.ecobeePin }</p>
-            </div>
-            <h2>Step 2</h2>
-            <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
-            <button onclick="login()">Complete Link</button>`;
-        });
+        g_pinResults = await api.calls.getPin(config.appKey, config.scope);
+        document.body.innerHTML = `<h2>Step 1</h2>
+          <p>Go to your ecobee portal under the settings tab and add this application using the pin code below</p>
+          <div class="pin">
+          <p class="lead">pin code: ${ g_pinResults.ecobeePin }</p>
+          </div>
+          <h2>Step 2</h2>
+          <p>Once you have authorized this app to have access to your account you may log in by clicking the Complete Link button below.</p>
+          <button onclick="login()">Complete Link</button>`;
       }
 
-      function login() {
+      async function login() {
         var code = g_pinResults.code;
         var appKey = config.appKey;
         var scope = config.scope;
 
-        api.calls.registerPin(appKey, code, function(err, registerResultObject) {
-          var tooFast = false;
-          if (err) {
-            console.log(err)
+        var tooFast = false;
+        let newTokens;
+        try {
+          newTokens = await api.calls.registerPin(appKey, code);
+        } catch(e) {
+          console.log(e)
 
-            var interval = g_pinResults.interval;
-            var errorMessage = '';
+          var interval = g_pinResults.interval;
+          var errorMessage = '';
 
-            if (err.data && err.data.error && err.data.error === 'slow_down') {
-              errorMessage = 'Polling too fast: Please wait ' + interval + ' seconds before attempting to complete the link again.';
-              tooFast = true;
-            } else {
-              errorMessage = 'You must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
-            }
-
-            alert(errorMessage);
-            setTimeout(login, (interval + 1) * 1000);
+          if (e.data && e.data.error && e.data.error === 'slow_down') {
+            errorMessage = 'Polling too fast: Please wait ' + interval + ' seconds before attempting to complete the link again.';
+            tooFast = true;
           } else {
-            console.log('New tokens:', registerResultObject);
-            tokenStore.save(registerResultObject);
-            route(location.pathname);
+            errorMessage = 'You must first authorize the app on your ecobee portal settings page. Then click the complete link button below.';
           }
-        });
+
+          alert(errorMessage);
+          setTimeout(login, (interval + 1) * 1000);
+        }
+
+        await tokenStore.save(newTokens);
+        route(location.pathname);
       };
 
       window.login = login;
