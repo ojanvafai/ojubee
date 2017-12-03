@@ -24,31 +24,6 @@
         return '<h1>404 Not found :/</h1>';
       }
 
-/* TODO
-
-- store tokens in a global and/or localstorage since we now fallback to refreshing on errors.
-- await refreshAuth on errors before falling back to the pin page
-- Only refesh auth in error cases and at most 1x/min after successful updates?
-
-- Show loading animation when refreshing auth when app not registered
-- Make refresh token cron work
-- enable SW caching, make favicon work, make add to homescreen work, delete the public directory
-- require login so random people can't change our HVAC settings
-- Make sure offline mostly works (e.g. that the fetch handlers do the right thing)
-
-Perf
-- stale-while-revalidate the list of thermostats to avoid jank in navbar
-- do refresh token during idle time for faster page load? does that make sense even?
-
-Code health
-- Move config stuff to a different file so others can fork and use it too
-- Update README.md and TODO files
-- cleanup all the global code into modules
-- load ecobee-api as a module
-- move stylesheets into actual files?
-
-*/
-
       const route = rlite(notFound, {
         '/': renderHome,
         'thermostat/:id': renderThermostat,
@@ -176,8 +151,8 @@ Code health
       }
 
       async function updateThermostat(id) {
-        let spinnerKey = 'updateThermostat';
-        showSpinner(spinnerKey);
+        let loaderKey = 'updateThermostat';
+        showLoader(loaderKey);
 
         let tokens = await tokenStore.get();
         if (!tokens) {
@@ -189,7 +164,7 @@ Code health
         let thermostatsOptions = new api.ThermostatsOptions(id);
 
         let request = new XMLHttpRequest();
-        addRequest(spinnerKey, request);
+        addRequest(loaderKey, request);
 
         let thermostats;
         try {
@@ -201,7 +176,7 @@ Code health
         if (thermostats)
           updateStateLoad(thermostatState(thermostats.thermostatList[0]));
 
-        hideSpinner(spinnerKey);
+        hideLoader(loaderKey);
       }
 
       function applyOnState(idPrefix, keyword) {
@@ -333,7 +308,6 @@ Code health
         }
 
         document.getElementById('container').classList.remove('hidden');
-        document.getElementById('load-spinner').style.display = 'none';
 
         g_tempsModified = false;
         g_state = newState;
@@ -412,20 +386,20 @@ Code health
         state.desiredCool = Math.round(state.desiredCool);
       }
 
-      function showSpinner(key) {
-        let spinner = document.getElementById('spinner');
-        if (spinner)
-          spinner.classList.remove('hidden');
+      function showLoader(key) {
+        let loader = document.getElementById('loader');
+        if (loader)
+          loader.classList.remove('hidden');
       }
 
-      function hideSpinner(key) {
-        let spinner = document.getElementById('spinner');
-        if (spinner)
-          spinner.classList.add('hidden');
+      function hideLoader(key) {
+        let loader = document.getElementById('loader');
+        if (loader)
+          loader.classList.add('hidden');
       }
 
-      async function updateThermostats(options, onSuccess, onError, spinnerKey) {
-        showSpinner(spinnerKey);
+      async function updateThermostats(options, onSuccess, onError, loaderKey) {
+        showLoader(loaderKey);
 
         let tokens = await tokenStore.get();
         if (!tokens) {
@@ -435,7 +409,7 @@ Code health
         }
 
         let request = new XMLHttpRequest();
-        addRequest(spinnerKey, request);
+        addRequest(loaderKey, request);
 
         let data;
         try {
@@ -447,7 +421,7 @@ Code health
         if (data)
           onSuccess(data);
 
-        hideSpinner(spinnerKey);
+        hideLoader(loaderKey);
       }
 
       function temperatureAsInt(temp) {
@@ -535,9 +509,10 @@ Code health
     display: flex;
     flex-direction: column;
     flex: 1;
-    transition: opacity 0.5s;
+    transition: opacity 0.2s;
   }
   #container.hidden {
+    opacity: 0;
     flex: 0;
   }
   #details {
@@ -552,16 +527,6 @@ Code health
   img {
     width: 50px;
     min-width: 0px;
-  }
-  #load-spinner {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-  }
-  #spinner {
-    opacity: 1;
-    transition: opacity 0.5s;
   }
   #override {
     font-size: 20px;
@@ -649,13 +614,7 @@ Code health
     color: blue;
   }
 </style>
-<div id="load-spinner">
-  <img alt="Loading spinner" src="/static/spinner.gif">
-</div>
-
-<div style="z-index: 1; position: absolute; right: 0px; top: 0px;">
-  <img id="spinner" class="hidden" alt="Loading spinner" src="/static/spinner.gif">
-</div>
+<div id="loader" class="hidden"></div>
 
 <div id="container" class="hidden">
 
@@ -715,8 +674,9 @@ Code health
       <div class="button item" onclick="modifyTemp('desiredHeat', 1)">+</div>
     </div>
   </div>
+
+  <div id="nav"></div>
 </div>
-<div id="nav"></div>
 `;
 
         var navBar = document.getElementById('nav');
@@ -841,5 +801,6 @@ Code health
   </head>
 
   <body>
+    <div id="loader"></div>
   </body>
 </html>
