@@ -1,16 +1,14 @@
-- store tokens in a global and/or localstorage since we now fallback to refreshing on errors.
-
-- stale-while-revalidate the list of thermostats instead of perma-caching it in localStorage
+- stale-while-revalidate the list of thermostats and refresh cron instead of perma-caching it in localStorage
 - Make refresh token cron work
-- enable SW caching, make favicon work, make add to homescreen work, delete the public directory
 - require login so random people can't change our HVAC settings
-- Make sure offline mostly works (e.g. that the fetch handlers do the right thing)
 - Add ability to change schedule
 - Add ability to set vacation
 
 Polish
 - Show loading animation when refreshing auth when app not registered
 - Style select elements to not be quite so ugly
+- Make sure offline mostly works (e.g. that the fetch handlers do the right thing and the UI shows as offline)
+
 
 Perf
 - do refresh token during idle time for faster page load? does that make sense even?

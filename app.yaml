@@ -7,6 +7,11 @@ handlers:
   static_dir: static
   secure: always
 
+- url: /service-worker.js
+  static_files: service-worker.js
+  upload: service-worker.js
+  secure: always
+
 - url: /
   static_files: index.html
   upload: index.html

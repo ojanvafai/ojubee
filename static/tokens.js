@@ -44,15 +44,15 @@ export default class {
     });
   };
 
-  static async get() {
+  static async get(bypassCache) {
     return new Promise((resolve, reject) => {
-      if (!cachedTokens) {
+      if (!bypassCache && !cachedTokens) {
         let localTokens = localStorage[key];
         if (localTokens)
           cachedTokens = JSON.parse(localTokens);
       }
 
-      if (cachedTokens) {
+      if (!bypassCache && cachedTokens) {
         resolve(cachedTokens);
         return;
       }
