@@ -12,7 +12,11 @@ self.addEventListener("install", (event) => {
 function shouldCache(url) {
   if (url.match(/^chrome-extension:/))
     return false;
+  // Memcache requests for tokens
   if (url.match(/^https:\/\/api.mlab.com\//))
+    return false;
+  // Proxy for reading/writing from/to the ecobee API.
+  if (url.match(/^https:\/\/l1cc9htdah.execute-api.us-east-1.amazonaws.com\/prod\/ojubee?/))
     return false;
   return true;
 }

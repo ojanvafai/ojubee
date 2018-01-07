@@ -162,8 +162,7 @@
         g_pendingRequests.set(key, request);
       }
 
-      async function updateThermostat(id) {
-        let loaderKey = 'updateThermostat';
+      async function updateThermostat(id, loaderKey) {
         showLoader(loaderKey);
 
         let tokens = await getTokens();
@@ -180,8 +179,34 @@
           thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
         }
 
-        if (thermostats)
-          updateStateLoad(thermostatState(thermostats.thermostatList[0]));
+        if (!thermostats) {
+          alert('Update thermostats failed. Reload the page to be safe.');
+          return;
+        }
+
+        let newState = thermostatState(thermostats.thermostatList[0]);
+        if (newState.error) {
+          window.location = newState.redirectUrl + window.location.pathname;
+          return;
+        }
+
+        // Check if desiredCool/heat don't match early return and
+        // issue another updateTemp request and loop through till it takes.
+        if (g_tempsModified && g_state &&
+            (newState.desiredHeat != g_state.desiredHeat ||
+             newState.desiredCool != g_state.desiredCool)) {
+          console.log("Numbers didn't take. Retrying.",
+            newState.desiredHeat, g_state.desiredHeat,
+            newState.desiredCool, g_state.desiredCool);
+          setTimeout(updateTemp, 1000);
+          return;
+        }
+
+        document.getElementById('container').classList.remove('hidden');
+
+        g_tempsModified = false;
+        g_state = newState;
+        applyState();
 
         hideLoader(loaderKey);
       }
@@ -296,39 +321,10 @@
         };
       }
 
-      function updateStateLoad(newState) {
-        if (newState.error) {
-          window.location = newState.redirectUrl + window.location.pathname;
-          return;
-        }
-
-        // Check if desiredCool/heat don't match early return and
-        // issue another updateTemp request and loop through till it takes.
-        if (g_tempsModified && g_state &&
-            (newState.desiredHeat != g_state.desiredHeat ||
-             newState.desiredCool != g_state.desiredCool)) {
-          console.log("Numbers didn't take. Retrying.",
-            newState.desiredHeat, g_state.desiredHeat,
-            newState.desiredCool, g_state.desiredCool);
-          setTimeout(updateTemp, 1000);
-          return;
-        }
-
-        document.getElementById('container').classList.remove('hidden');
-
-        g_tempsModified = false;
-        g_state = newState;
-        applyState();
-      }
-
       function resumeSchedule() {
-        var onError = () => {
-          alert('Resume schedule failed. Reload the page to be safe.');
-        };
-
         var updateFunction = new api.ResumeProgramFunction();
         var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-        updateThermostats(options, updateState, onError, 'resumeSchedule');
+        updateThermostats(options, 'resumeSchedule');
       }
 
       window.resumeSchedule = resumeSchedule;
@@ -395,12 +391,14 @@
       }
 
       function hideLoader(key) {
+        g_pendingRequests.delete(key);
+
         let loader = document.getElementById('loader');
-        if (loader)
+        if (loader && !g_pendingRequests.length)
           loader.classList.add('hidden');
       }
 
-      async function updateThermostats(options, onSuccess, onError, loaderKey) {
+      async function updateThermostats(options, loaderKey) {
         showLoader(loaderKey);
 
         let tokens = await getTokens();
@@ -411,15 +409,14 @@
         try {
           data = await api.calls.updateThermostats(tokens.access_token, options, request);
         } catch(e) {
-          onError("Couldn't update thermostats.", e);
           tokens = await refreshAuth();
           data = await api.calls.updateThermostats(tokens.access_token, options, request);
         }
 
         if (data)
-          onSuccess(data);
-
-        hideLoader(loaderKey);
+          updateState(loaderKey);
+        else
+          alert('Error updating thermostats. Reload the page to be safe.');
       }
 
       function temperatureAsInt(temp) {
@@ -427,10 +424,6 @@
       }
 
       function updateTemp() {
-        var onError = () => {
-          alert('Update failed. Reload the page to be safe.');
-        };
-
         roundTempValues(g_state);
         var desiredCool = temperatureAsInt(g_state.desiredCool);
         var desiredHeat = temperatureAsInt(g_state.desiredHeat);
@@ -440,32 +433,29 @@
         // https://www.ecobee.com/home/developer/api/documentation/v1/functions/SetHold.shtml
         var updateFunction = new api.SetHoldFunction(desiredCool, desiredHeat, fan, duration);
         var options = new api.ThermostatsUpdateOptions(g_thermostatId, [updateFunction]);
-        updateThermostats(options, updateState, onError, 'updateTemp');
+        updateThermostats(options, 'updateTemp');
       }
 
       function updateMode() {
-        var onError = () => {
-          alert('Update failed. Reload the page to be safe.');
-        };
-
         var newMode = document.getElementById('mode').selectedOptions[0].value;
         var thermostats_update_options = new api.ThermostatsUpdateOptions(g_thermostatId);
         var settings = new api.ModeUpdateSettings(newMode);
         var options = new api.ThermostatsUpdateOptions(g_thermostatId, null, settings);
-        updateThermostats(options, updateState, onError, 'updateMode');
+        updateThermostats(options, 'updateMode');
       }
 
       window.updateMode = updateMode;
 
-      function updateState() {
-        updateThermostat(g_thermostatId);
+      function updateState(loaderKey) {
+        updateThermostat(g_thermostatId, loaderKey);
       }
 
       function startUpdates() {
         if (!g_thermostatId)
           return;
 
-        updateState();
+        let loaderKey = 'updateThermostat';
+        updateState(loaderKey);
 
         if (!g_updateTimer)
           return;
