@@ -61,8 +61,8 @@
       }
 
       function refreshFailed(msg) {
-        console.log(msg);
         renderPin();
+        throw Error(msg);
       }
 
       function sleep(time) {
@@ -127,7 +127,7 @@
         try {
           summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
         } catch(e) {
-          await refreshAuth();
+          tokens = await refreshAuth();
           summary = await api.calls.thermostatSummary(tokens.access_token, thermostatSummaryOptions);
         }
 
@@ -176,7 +176,7 @@
         try {
           thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
         } catch(e) {
-          await refreshAuth();
+          tokens = await refreshAuth();
           thermostats = await api.calls.thermostats(tokens.access_token, thermostatsOptions, request);
         }
 
@@ -321,13 +321,8 @@
         applyState();
       }
 
-      function updateState() {
-        updateThermostat(g_thermostatId);
-      }
-
       function resumeSchedule() {
         var onError = () => {
-          updateState();
           alert('Resume schedule failed. Reload the page to be safe.');
         };
 
@@ -417,7 +412,7 @@
           data = await api.calls.updateThermostats(tokens.access_token, options, request);
         } catch(e) {
           onError("Couldn't update thermostats.", e);
-          await refreshAuth();
+          tokens = await refreshAuth();
           data = await api.calls.updateThermostats(tokens.access_token, options, request);
         }
 
@@ -433,7 +428,6 @@
 
       function updateTemp() {
         var onError = () => {
-          updateState();
           alert('Update failed. Reload the page to be safe.');
         };
 
@@ -451,7 +445,6 @@
 
       function updateMode() {
         var onError = () => {
-          updateState();
           alert('Update failed. Reload the page to be safe.');
         };
 
@@ -463,6 +456,10 @@
       }
 
       window.updateMode = updateMode;
+
+      function updateState() {
+        updateThermostat(g_thermostatId);
+      }
 
       function startUpdates() {
         if (!g_thermostatId)
@@ -800,13 +797,6 @@
           stopUpdates();
       });
 
-      route(location.pathname);
-
-      // window.addEventListener('online', () => { window.location.reload(); });
-      // window.addEventListener('offline', () => {
-      //   document.body.classList.add('offline');
-      // });
-
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js').then(
           (registration) => {},
@@ -825,6 +815,12 @@
         });
       });
 
+      // window.addEventListener('online', () => { window.location.reload(); });
+      // window.addEventListener('offline', () => {
+      //   document.body.classList.add('offline');
+      // });
+
+      route(location.pathname);
     </script>
   </head>
 

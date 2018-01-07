@@ -3,8 +3,6 @@
 var version = 'v4::';
 var enableLogging = false;
 
-console.log('swervicasdf');
-
 self.addEventListener("install", (event) => {
   if (enableLogging)
     console.log('WORKER: install event in progress.');
@@ -12,23 +10,11 @@ self.addEventListener("install", (event) => {
 });
 
 function shouldCache(url) {
+  if (url.match(/^chrome-extension:/))
+    return false;
+  if (url.match(/^https:\/\/api.mlab.com\//))
+    return false;
   return true;
-  // // TODO: This is super hacky to cache the home page, e.g. query/hash parameters
-  // // would break this.
-  // if (url == self.location.origin + "/")
-  //   return true;
-
-  // if (url.match(/^chrome-extension:/))
-  //   return false;
-
-  // // Only match the main thermostat page and the thermostats json list.
-  // // For the json list we want the stale while revalidate behavior since
-  // // that almost never changes.
-  // if (url.match(/\/thermostats\/[^/]+$/)) {
-  //   return true;
-  // }
-
-  // return url.match(/\/(static)\//);
 }
 
 self.addEventListener("fetch", (event) => {
